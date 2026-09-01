@@ -29,7 +29,11 @@ OVERSHOOT = 0.02                  # cursor parks just past the edge, not off it
 
 # --- one-euro filter --------------------------------------------------
 MIN_CUTOFF = 1.0                  # lower: steadier at rest, laggier moving
-BETA = 0.007                      # higher: less lag when moving fast
+# The published one-euro betas are around 0.007, but they are quoted for a
+# signal measured in pixels. Ours is 0..1 across the whole screen, so the
+# same number is a thousand times too small to loosen anything and a sweep
+# lags by a sixth of a second. Scaled to this signal's units.
+BETA = 1.5                        # higher: less lag when moving fast
 D_CUTOFF = 1.0
 
 # --- gestures ---------------------------------------------------------
