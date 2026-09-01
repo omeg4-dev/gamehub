@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Game Hub controller</title>
+<link rel="stylesheet" href="static/phone/phone.css">
+</head>
+<body>
+<header>
+  <span id="dot" class="dot"></span>
+  <span id="running">Game Hub</span>
+  <button id="btn-recentre" title="Point at the middle, then tap">&#9678;</button>
+</header>
+
+<div id="no-sensors" hidden>
+  This page cannot read the phone's motion sensors.<br>
+  Reload over <b>https</b> and accept the certificate.
+</div>
+
+<main>
+  <div id="dpad" class="dpad">
+    <button data-name="up">&#9650;</button>
+    <button data-name="left">&#9664;</button>
+    <button data-name="right">&#9654;</button>
+    <button data-name="down">&#9660;</button>
+  </div>
+  <button id="btn-a" class="a" data-name="a">A</button>
+  <button id="btn-b" class="b" data-name="b">B</button>
+</main>
+
+<footer>
+  <button id="btn-home" data-name="home">Home</button>
+  <button id="btn-pause" data-name="pause">Pause</button>
+  <button id="btn-gear">&#9881;</button>
+</footer>
+
+<dialog id="settings">
+  <label>Sensitivity <input id="sensitivity" type="range" min="0.5" max="2.5" step="0.1" value="1"></label>
+  <button id="btn-close">Done</button>
+</dialog>
+
+<script src="static/phone/phone.js"></script>
+</body>
+</html>
