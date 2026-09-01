@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Game Hub</title>
+<link rel="stylesheet" href="static/hub/hub.css">
+</head>
+<body>
+<div id="grid" class="grid"></div>
+<div id="problems" class="problems" hidden></div>
+
+<iframe id="stage" hidden allow="autoplay"></iframe>
+
+<div id="connect" class="connect">
+  <h1>Point your phone at the screen</h1>
+  <img id="qr" alt="">
+  <p id="address"></p>
+  <p class="muted">A mouse works too.</p>
+</div>
+
+<footer id="bar"><span id="clock"></span><span id="date"></span></footer>
+<canvas id="cursor"></canvas>
+
+<script src="static/hub/input.js"></script>
+<script src="static/hub/cursor.js"></script>
+<script src="static/hub/hub.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+:root { --ink:#20303c; --card:#ffffff; --edge:#cfe3ef; --accent:#3aa7e0; }
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden; cursor: none;
+  color: var(--ink); font: 16px/1.4 system-ui, sans-serif;
+  background: linear-gradient(#eaf6fd, #cfe6f4);
+}
+.grid { display: grid; grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr; gap: 2vmin; padding: 4vmin; height: calc(100% - 9vmin); }
+.card { position: relative; background: var(--card); border: 2px solid var(--edge);
+  border-radius: 2vmin; display: grid; place-items: center; overflow: hidden;
+  box-shadow: 0 .4vmin 1.2vmin rgba(30,70,100,.12);
+  transition: transform .12s ease, box-shadow .12s ease; }
+.card.hot { transform: scale(1.06);
+  box-shadow: 0 1vmin 3vmin rgba(30,120,190,.35); border-color: var(--accent); }
+.card img { width: 100%; height: 100%; object-fit: cover; }
+.card .name { position: absolute; bottom: .6vmin; font-weight: 600; }
+.card .star { position: absolute; top: .6vmin; right: .8vmin; font-size: 2vmin; }
+.card.opening { transform: scale(6); opacity: 0; transition: all .45s ease-in; }
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
+.connect { position: fixed; inset: 0; display: grid; place-content: center;
+  justify-items: center; gap: 1rem; text-align: center;
+  background: rgba(234,246,253,.96); }
+.connect.badge { inset: auto 2vmin 2vmin auto; padding: 1vmin;
+  border-radius: 1.5vmin; background: rgba(255,255,255,.9); }
+.connect.badge h1, .connect.badge .muted { display: none; }
+.connect.badge img { width: 12vmin; }
+.muted { color: #6b8395; }
+.problems { position: fixed; left: 2vmin; bottom: 2vmin; max-width: 40vmin;
+  background: #fff2f0; border: 1px solid #ffb4a6; border-radius: 1vmin;
+  padding: 1vmin; font-size: 1.6vmin; }
+footer { position: fixed; inset: auto 0 0 0; height: 9vmin;
+  display: flex; align-items: center; justify-content: center; gap: 2vmin;
+  background: rgba(255,255,255,.75); font-size: 3vmin; }
+#cursor { position: fixed; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; }
