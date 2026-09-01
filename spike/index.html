@@ -1,0 +1,13 @@
+<!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
+<body style="font:16px system-ui;background:#111;color:#eee;padding:2rem">
+<h1>sensor spike</h1><pre id=out>waiting…</pre>
+<script>
+let n = 0;
+addEventListener("deviceorientation", e => {
+  if (n++ % 30) return;
+  const line = `alpha=${e.alpha?.toFixed(1)} beta=${e.beta?.toFixed(1)} gamma=${e.gamma?.toFixed(1)} n=${n}`;
+  out.textContent = line;
+  fetch("/", {method: "POST", body: line});
+});
+setTimeout(() => { if (!n) out.textContent = "NO EVENTS — insecure context or no permission"; }, 3000);
+</script>
