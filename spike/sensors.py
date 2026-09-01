@@ -6,14 +6,23 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 IP = json.loads(subprocess.run(
     ["ip", "-j", "route", "get", "192.0.2.1"],
     capture_output=True, text=True).stdout)[0]["prefsrc"]
-CERT = os.path.join(HERE, "cert.pem")
-KEY = os.path.join(HERE, "key.pem")
+
+# Not in HERE: this server hands out every file in HERE to anyone on the LAN,
+# and the private key is one file.
+KEYS = os.path.expanduser("~/.local/state/gamehub/spike")
+os.makedirs(KEYS, mode=0o700, exist_ok=True)
+CERT = os.path.join(KEYS, "cert.pem")
+KEY = os.path.join(KEYS, "key.pem")
 
 if not os.path.exists(CERT):
-    subprocess.run([
-        "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes",
-        "-keyout", KEY, "-out", CERT, "-days", "3", "-subj", "/CN=" + IP,
-        "-addext", f"subjectAltName=IP:{IP}"], check=True)
+    old = os.umask(0o077)
+    try:
+        subprocess.run([
+            "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes",
+            "-keyout", KEY, "-out", CERT, "-days", "3", "-subj", "/CN=" + IP,
+            "-addext", f"subjectAltName=IP:{IP}"], check=True)
+    finally:
+        os.umask(old)
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):

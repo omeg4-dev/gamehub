@@ -29,3 +29,9 @@ def test_a_new_address_forces_a_new_certificate(tmp_path):
 def test_the_key_is_not_readable_by_anyone_else(tmp_path):
     _, key = tls.ensure_cert("192.0.2.36", tmp_path)
     assert key.stat().st_mode & 0o077 == 0
+
+
+def test_the_private_key_is_not_readable_by_anyone_else(tmp_path):
+    _cert, key = tls.ensure_cert("127.0.0.1", directory=tmp_path / "state")
+    assert key.stat().st_mode & 0o077 == 0
+    assert (tmp_path / "state").stat().st_mode & 0o077 == 0
