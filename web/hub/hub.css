@@ -34,3 +34,7 @@ footer { position: fixed; inset: auto 0 0 0; height: 9vmin;
   background: rgba(255,255,255,.75); font-size: 3vmin; }
 #cursor { position: fixed; inset: 0; width: 100%; height: 100%;
   pointer-events: none; }
+
+/* The grid and the stage are shown and hidden by the `hidden` property;
+   their own display rules would otherwise outrank the browser default. */
+[hidden] { display: none !important; }

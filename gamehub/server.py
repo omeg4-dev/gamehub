@@ -8,11 +8,12 @@ Every path starts with the session token. The server is on the LAN, so the
 token is the whole of the door; a middleware refuses anything else before a
 handler ever sees it.
 """
+import base64
 import logging
 
 from aiohttp import WSMsgType, web
 
-from . import config, library
+from . import config, library, net
 from .controller import Controller
 from .store import Store
 
@@ -27,6 +28,7 @@ GAMES_DIR = web.AppKey("games_dir", object)
 WEB_DIR = web.AppKey("web_dir", object)
 HUB = web.AppKey("hub", object)
 PHONES = web.AppKey("phones", object)
+PHONE_URL = web.AppKey("phone_url", str)
 
 
 class Listeners:
@@ -48,7 +50,7 @@ class Listeners:
 
 
 def build_app(token, *, controller=None, store=None, games_dir=None,
-              web_dir=None):
+              web_dir=None, phone_url=""):
     app = web.Application()
     app[TOKEN] = token
     app[CONTROLLER] = controller or Controller()
@@ -57,6 +59,7 @@ def build_app(token, *, controller=None, store=None, games_dir=None,
     app[WEB_DIR] = web_dir or config.WEB_DIR
     app[HUB] = Listeners()
     app[PHONES] = Listeners()
+    app[PHONE_URL] = phone_url
 
     @web.middleware
     async def gate(request, handler):
@@ -71,6 +74,7 @@ def build_app(token, *, controller=None, store=None, games_dir=None,
         web.get("/{token}/static/{path:.*}", static),
         web.get("/{token}/games/{slug}/{path:.*}", game_file),
         web.get("/{token}/api/games", api_games),
+        web.get("/{token}/api/qr", api_qr),
         web.get("/{token}/api/scores/{slug}", api_scores),
         web.post("/{token}/api/scores/{slug}", api_submit),
         web.post("/{token}/api/favourite/{slug}", api_favourite),
@@ -145,6 +149,14 @@ async def api_favourite(request):
     body = await request.json()
     on = request.app[STORE].favourite(slug, bool(body.get("on")))
     return web.json_response({"favourite": on})
+
+
+async def api_qr(request):
+    """The picture the phone scans, as a data URI so the page needs no
+    second request and no file on disk."""
+    url = request.app[PHONE_URL]
+    png = base64.b64encode(net.qr_png(url)).decode()
+    return web.json_response({"url": url, "png": f"data:image/png;base64,{png}"})
 
 
 async def ws_phone(request):

@@ -29,7 +29,8 @@ async def client(tmp_path, loop):
     (demo / "index.html").write_text("<h1>demo</h1>")
     app = server.build_app(TOKEN, controller=Controller(),
                            store=Store(tmp_path / "data"),
-                           games_dir=games, web_dir=web)
+                           games_dir=games, web_dir=web,
+                           phone_url=f"https://192.0.2.36:8730/{TOKEN}/phone")
     async with TestClient(TestServer(app)) as c:
         yield c
 
@@ -112,3 +113,8 @@ async def test_a_game_cannot_serve_a_file_above_its_own_folder(client):
     """A game folder is a drop-in from anywhere; the path is not trusted."""
     response = await client.get(f"/{TOKEN}/games/demo/../../pytest.ini")
     assert response.status in (403, 404)
+
+
+async def test_the_qr_endpoint_returns_a_data_uri(client):
+    body = await (await client.get(f"/{TOKEN}/api/qr")).json()
+    assert body["png"].startswith("data:image/png;base64,")
