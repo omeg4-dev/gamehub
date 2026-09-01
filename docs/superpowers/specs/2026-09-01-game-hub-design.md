@@ -104,14 +104,18 @@ binary packing. `devicemotion` supplies `a` for gestures.
    phone like a Wiimote, flat like a TV remote, or at whatever angle is
    comfortable, and recentring calls that the middle of the screen.
 2. **Pointing axis.** Rotate the phone's top edge (`+Y`) by `r`. Yaw is
-   `atan2(-v.x, v.y)`, pitch is `atan2(v.z, hypot(v.x, v.y))`. Extracting an
+   `atan2(v.x, v.y)`, pitch is `atan2(v.z, hypot(v.x, v.y))`. Extracting an
    axis rather than Euler angles is roll-free for nothing: spinning the phone
    about the direction it points does not move the axis, so the cursor does not
    tilt when your wrist does.
-3. **Map to the screen.** `x = 0.5 + yaw / (2·HALF_ANGLE)`, likewise pitch, with
-   `HALF_ANGLE` about 22° — turn 22° right and you are at the right edge. This
-   is the one number that must be tuned by feel, so it is a config constant and
-   the phone carries a sensitivity slider.
+3. **Map to the screen.** `x = 0.5 + yaw / (2·HALF_ANGLE_X)` and
+   `y = 0.5 - pitch / (2·HALF_ANGLE_Y)`, with `HALF_ANGLE_X` about 22° — turn
+   22° right and you are at the right edge. The vertical angle is the
+   horizontal one divided by the screen's aspect ratio; a single angle for both
+   would squash the vertical, so the same wrist movement would cover more
+   picture sideways than up. `HALF_ANGLE_X` is the one number that must be
+   tuned by feel, so it is a config constant and the phone carries a
+   sensitivity slider.
 4. **Smooth with a one-euro filter**, not a fixed average. It barely lags a fast
    flick and still kills the shake when you hold on a menu card — the trade an
    EMA cannot make.
@@ -138,7 +142,8 @@ can therefore be built, tested and screenshotted without the phone.
 
 | Name | Start | Meaning |
 |---|---|---|
-| `HALF_ANGLE` | 22° | degrees from centre to screen edge |
+| `HALF_ANGLE_X` | 22° | degrees from centre to the left/right edge |
+| `HALF_ANGLE_Y` | `HALF_ANGLE_X / ASPECT` | the same wrist covers the same picture in both axes |
 | `MIN_CUTOFF` | 1.0 | one-euro filter, jitter at rest |
 | `BETA` | 0.007 | one-euro filter, lag when moving |
 | `SWING_G` | 2.2 | gesture threshold |
@@ -260,7 +265,7 @@ screenshots for review.
    Brave's `unsafely-treat-insecure-origin-as-secure` flag (no cert, but must be
    set on every device). Nothing else is built until a real phone has been seen
    emitting sensor frames.
-2. **Feel.** `HALF_ANGLE` and the filter constants are guesses until they are in
+2. **Feel.** `HALF_ANGLE_X` and the filter constants are guesses until they are in
    your hands. Mitigated by the sensitivity slider and by the traces, which turn
    "floaty" into a number to tune against.
 3. **`--class` under Wayland.** Chromium's ozone backend may not apply it; the
@@ -271,5 +276,6 @@ screenshots for review.
 ## 9. Not in the first cut
 
 Snake, Color Sort, the Crossy Road port, multiple phones, a fifth card in the
-`Super+T` tv overlay, and any keybind — all deliberately later. The first cut
+`Super+T` tv overlay, any keybind, and the `--tv` flag's actual behaviour (the
+flag is parsed and refused with a message) — all deliberately later. The first cut
 proves the pointer and the grid with one purpose-built game.
