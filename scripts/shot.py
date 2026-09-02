@@ -4,12 +4,14 @@ The look is the feature here, and no assertion about a stylesheet can tell
 you whether a menu looks like the Wii's. This starts the real server on
 loopback, opens a headless Chromium at it and writes a PNG.
 
-    python scripts/shot.py out.png [games-dir] [web-dir]
+    python scripts/shot.py out.png
+    python scripts/shot.py snake.png --page games/snake/index.html
 
 A phone socket is opened first and held: without one the hub covers itself
 with the fullscreen "point your phone at the screen" panel, and the picture
 would be of the QR code.
 """
+import argparse
 import asyncio
 import pathlib
 import ssl
@@ -29,7 +31,7 @@ PORT = 8791
 SHOT = config.STATE_DIR / "shot"
 
 
-async def main(out, games_dir, web_dir):
+async def main(out, page, games_dir, web_dir):
     cert, key = tls.ensure_cert("127.0.0.1", SHOT)
     app = server.build_app(TOKEN, controller=Controller(),
                            store=Store(SHOT / "data"),
@@ -57,18 +59,35 @@ async def main(out, games_dir, web_dir):
                 "--no-first-run", "--no-default-browser-check",
                 f"--user-data-dir={profile}",
                 "--window-size=1600,900", f"--screenshot={out}",
-                f"https://127.0.0.1:{PORT}/{TOKEN}/hub")
+                # Console messages come back on stderr, and a page that
+                # threw while parsing draws a blank picture that looks like
+                # a design decision. Better to fail loudly.
+                "--enable-logging=stderr", "--v=0",
+                f"https://127.0.0.1:{PORT}/{TOKEN}/{page}",
+                stderr=asyncio.subprocess.PIPE)
             try:
-                await asyncio.wait_for(browser.wait(), 60)
+                _, noise = await asyncio.wait_for(browser.communicate(), 60)
             except asyncio.TimeoutError:
                 browser.kill()
                 sys.exit("the browser never finished")
     await runner.cleanup()
+
+    bad = [line for line in noise.decode(errors="replace").splitlines()
+           if "Uncaught" in line or ":ERROR:CONSOLE" in line]
+    for line in bad:
+        print(line, file=sys.stderr)
+    if bad:
+        sys.exit(f"{page} logged {len(bad)} console error(s)")
     print(out)
 
 
 if __name__ == "__main__":
-    out = sys.argv[1] if len(sys.argv) > 1 else "hub.png"
-    games = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else None
-    pages = pathlib.Path(sys.argv[3]) if len(sys.argv) > 3 else None
-    asyncio.run(main(out, games, pages))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("out", nargs="?", default="hub.png")
+    parser.add_argument("--page", default="hub",
+                        help="what to open, relative to the token: the hub, "
+                             "or games/<slug>/index.html")
+    parser.add_argument("--games", type=pathlib.Path)
+    parser.add_argument("--web", type=pathlib.Path)
+    args = parser.parse_args()
+    asyncio.run(main(args.out, args.page, args.games, args.web))

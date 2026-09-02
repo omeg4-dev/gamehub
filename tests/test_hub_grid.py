@@ -72,3 +72,8 @@ def test_the_shelf_carries_the_clock_and_the_two_knobs():
     html = HUB_HTML.read_text()
     assert 'id="clock"' in html and 'id="date"' in html
     assert html.count('class="knob') == 2
+
+
+def test_a_game_can_ask_for_the_hand_to_be_put_away():
+    """Snake steers with the d-pad; a cursor floating over it is noise."""
+    assert 'cursor === "none"' in source()

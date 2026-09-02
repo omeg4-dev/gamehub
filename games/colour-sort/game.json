@@ -1,0 +1,7 @@
+{
+  "name": "Colour Sort",
+  "entry": "index.html",
+  "description": "Pour the colours until every tube holds one. Three minutes.",
+  "controls": ["pointer", "a", "b"],
+  "score": { "order": "high" }
+}

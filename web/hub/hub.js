@@ -11,6 +11,7 @@ const connect = document.getElementById("connect");
 const problems = document.getElementById("problems");
 const flash = document.getElementById("flash");
 const pagers = [...document.querySelectorAll(".pager")];
+const hand = document.getElementById("cursor");
 
 // Twelve plates to a page, filled up with empty ones. The empty slots are
 // not padding: a menu that reflows every time a folder is dropped in stops
@@ -117,6 +118,9 @@ const open = game => {
   const card = grid.querySelector(`[data-slug="${game.slug}"]`);
   card?.classList.add("opening");
   flash.classList.add("on");
+  // A game that steers with the d-pad has no use for a hand hovering over
+  // it; game.json says so with "cursor": "none".
+  hand.hidden = game.cursor === "none";
   Input.tell({type: "running", name: game.name, controls: game.controls});
   setTimeout(() => {
     stage.src = `${base}/games/${game.slug}/${game.entry}`;
@@ -131,6 +135,7 @@ const home = () => {
   stage.hidden = true;
   stage.src = "about:blank";
   grid.hidden = false;
+  hand.hidden = false;
   grid.querySelector(".opening")?.classList.remove("opening");
   current = null;
   hot = null;

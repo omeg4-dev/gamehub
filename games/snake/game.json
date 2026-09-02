@@ -1,0 +1,14 @@
+{
+  "name": "Snake",
+  "entry": "index.html",
+  "description": "Steer with the d-pad, or just point where you want to go.",
+  "controls": [
+    "pointer",
+    "dpad",
+    "a"
+  ],
+  "cursor": "none",
+  "score": {
+    "order": "high"
+  }
+}
