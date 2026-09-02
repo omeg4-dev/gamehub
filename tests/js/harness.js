@@ -19,6 +19,8 @@ function load(path, epilogue) {
     Math, JSON, console,
     GameHub: {on: () => {}, onPause: () => {}, onResume: () => {},
               ready: () => {}, submitScore: () => {}, exit: () => {},
+              rumble: () => {}, players: () => [{n: 1, name: "P1",
+                                                 colour: "#3ec7ff"}],
               highScores: () => Promise.resolve([])},
     out: null,
   };

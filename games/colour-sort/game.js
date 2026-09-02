@@ -31,6 +31,11 @@ let over = false;
 let ends = performance.now() + ROUND_MS;
 let pointer = {x: 0.5, y: 0.5};
 let boxes = [];        // where each tube was last drawn
+let flights = [];      // units in the air between two tubes
+let pops = [];         // little celebrations, drawn and forgotten
+let hover = null;      // the tube under the hand, for the lift-on-hover
+const lifts = new Map();  // tube -> how far it is currently raised, 0..1
+const clock = () => performance.now();
 
 // Not `top`: a global const of that name collides with window.top and
 // the whole script fails to parse.
@@ -44,6 +49,7 @@ const done = () => tubes.every(t => t.length === 0 ||
                                     (t.length === DEPTH && runLength(t) === DEPTH));
 
 const deal = () => {
+  flights = [];
   const colours = Math.min(COLOURS.length, 4 + Math.floor(level / 2));
   const count = colours + SPARE;
   do {
@@ -86,6 +92,40 @@ const pour = (from, to) => {
     moved++;
   }
   undo.push({from, to, moved});
+  // The board changes at once; the picture catches up. Each unit is given
+  // its own arc, a beat apart, which is what makes a four-unit pour read as
+  // a pour rather than as a jump cut.
+  for (let n = 0; n < moved; n++) {
+    flights.push({src: from, dst: to, colour, index: to.length - moved + n,
+                  start: clock() + n * 70, dur: 260});
+    note(430 + n * 90, .09);
+  }
+  return moved;
+};
+
+// --- noise and confetti -------------------------------------------------
+const note = (hz, seconds = 0.08, shape = "triangle") => {
+  const Audio = globalThis.AudioContext || globalThis.webkitAudioContext;
+  if (!Audio) return;                  // no speakers is not a broken game
+  const audio = note.ctx ||= new Audio();
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+  osc.type = shape;
+  osc.frequency.setValueAtTime(hz, audio.currentTime);
+  gain.gain.setValueAtTime(0.06, audio.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0005, audio.currentTime + seconds);
+  osc.connect(gain).connect(audio.destination);
+  osc.start();
+  osc.stop(audio.currentTime + seconds);
+};
+
+const cheer = (x, y, colour) => {
+  for (let i = 0; i < 26; i++) {
+    const angle = (i / 26) * Math.PI * 2;
+    const speed = 90 + Math.random() * 260;
+    pops.push({x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 120,
+               life: 1, colour, spin: Math.random() * Math.PI});
+  }
 };
 
 // --- input -------------------------------------------------------------
@@ -98,14 +138,18 @@ const under = () => {
   return null;
 };
 
-GameHub.on("pointer", p => { pointer = p; });
+// One puzzle, one hand: a second phone in the room is welcome to watch.
+GameHub.on("pointer", p => { if ((p.player || 1) === 1) pointer = p; });
 
 GameHub.on("button", event => {
-  if (!event.down || !running || over) return;
+  if (!event.down || !running || over || (event.player || 1) !== 1) return;
   if (event.name === "b") {
     const last = undo.pop();
     if (last) {
       for (let n = 0; n < last.moved; n++) last.from.push(last.to.pop());
+      // Whatever was still in the air belonged to the move being undone.
+      flights = flights.filter(f => f.dst !== last.to);
+      note(320, .1);
     }
     held = null;
     return;
@@ -113,17 +157,28 @@ GameHub.on("button", event => {
   if (event.name !== "a") return;
   const tube = under();
   if (!tube) { held = null; return; }
-  if (!held) { if (tube.length) held = tube; return; }
+  if (!held) {
+    if (tube.length) { held = tube; note(660, .06); }
+    return;
+  }
   if (legal(held, tube)) {
     pour(held, tube);
     held = null;
+    const box = boxes.find(b => b.tube === tube);
+    if (tube.length === DEPTH && runLength(tube) === DEPTH && box) {
+      cheer(box.x + box.w / 2, box.y + box.h / 2, COLOURS[topOf(tube)]);
+      note(880, .18);
+    }
     if (done()) {
       solved++;
       level++;
+      note(1046, .3);
+      for (const b of boxes) cheer(b.x + b.w / 2, b.y + b.h / 2, "#ffc93c");
       deal();
     }
   } else {
     held = tube.length ? tube : null;
+    note(200, .09, "square");
   }
 });
 
@@ -142,8 +197,56 @@ const glass = (x, y, w, h) => {
   ctx.roundRect(x, y, w, h, [w * .18, w * .18, w * .42, w * .42]);
 };
 
+// The units in the air, on an arc from the lip of one tube to its place in
+// the other. Straight lines look like a teleport; the arc is the pour.
+const drawFlights = () => {
+  const at = clock();
+  flights = flights.filter(f => at < f.start + f.dur);
+  for (const flight of flights) {
+    const from = boxes.find(b => b.tube === flight.src);
+    const to = boxes.find(b => b.tube === flight.dst);
+    if (!from || !to) continue;
+    const t = Math.max(0, (at - flight.start) / flight.dur);
+    const ease = t * t * (3 - 2 * t);
+    const unit = to.h / DEPTH;
+    const x0 = from.x + from.w / 2, y0 = from.y + from.h * .1;
+    const x1 = to.x + to.w / 2;
+    const y1 = to.y + to.h - (flight.index + 0.5) * unit;
+    const x = x0 + (x1 - x0) * ease;
+    const y = y0 + (y1 - y0) * ease - Math.sin(Math.PI * ease) * to.h * .22;
+    ctx.fillStyle = flight.colour;
+    ctx.beginPath();
+    ctx.ellipse(x, y, to.w * .30, unit * .42, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+};
+
+const drawPops = dt => {
+  for (let i = pops.length - 1; i >= 0; i--) {
+    const bit = pops[i];
+    bit.x += bit.vx * dt / 1000;
+    bit.y += bit.vy * dt / 1000;
+    bit.vy += dt * 1.6;
+    bit.life -= dt / 900;
+    if (bit.life <= 0) { pops.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, bit.life);
+    ctx.translate(bit.x, bit.y);
+    ctx.rotate(bit.spin + bit.life * 6);
+    ctx.fillStyle = bit.colour;
+    const size = Math.min(innerWidth, innerHeight) * .012;
+    ctx.fillRect(-size / 2, -size / 4, size, size / 2);
+    ctx.restore();
+  }
+};
+
+let lastFrame = 0;
+
 const draw = () => {
+  const dt = Math.min(80, clock() - lastFrame || 16);
+  lastFrame = clock();
   ctx.clearRect(0, 0, innerWidth, innerHeight);
+  hover = under();
   // Tubes are 1:3.6 and stand in one row up to six, two beyond that. The
   // width has to satisfy both budgets at once -- sizing off the height
   // alone is what pushed the eight-colour boards off the sides.
@@ -165,11 +268,20 @@ const draw = () => {
     const count = Math.min(perRow, tubes.length - row * perRow);
     const x = (innerWidth - (count * spacing - (spacing - w))) / 2
               + inRow * spacing;
-    const y = topY + row * gapY;
+    let y = topY + row * gapY;
     boxes.push({tube, x, y, w, h});
 
-    const lifted = tube === held;
     const unit = h / DEPTH;
+    // Lifting is animated rather than switched: the tube you are pointing
+    // at rises a little, the one you have picked up rises a lot, and both
+    // settle back down. This is most of what makes the board feel handled.
+    const wanted = tube === held ? 1 : tube === hover ? .28 : 0;
+    const lift = (lifts.get(tube) ?? 0) + (wanted - (lifts.get(tube) ?? 0)) * .22;
+    lifts.set(tube, lift);
+    const lifted = tube === held;
+    const rise = lift * unit * .55;
+    y -= rise;
+    boxes[boxes.length - 1].y = y;
 
     ctx.save();
     ctx.shadowColor = "rgba(70,105,130,.25)";
@@ -184,10 +296,16 @@ const draw = () => {
     glass(x, y, w, h);
     ctx.clip();
     tube.forEach((colour, n) => {
-      const raised = lifted && n === tube.length - 1 ? unit * .35 : 0;
+      // A unit still in the air is not in the glass yet.
+      if (flights.some(f => f.dst === tube && f.index === n)) return;
       ctx.fillStyle = COLOURS[colour];
-      ctx.fillRect(x + w * .06, y + h - (n + 1) * unit - raised,
-                   w * .88, unit + 1);
+      ctx.fillRect(x + w * .06, y + h - (n + 1) * unit, w * .88, unit + 1);
+      // A meniscus on the top unit: one pale line, and the paint reads as
+      // liquid instead of as a stack of rectangles.
+      if (n === tube.length - 1) {
+        ctx.fillStyle = "rgba(255,255,255,.35)";
+        ctx.fillRect(x + w * .06, y + h - (n + 1) * unit, w * .88, unit * .12);
+      }
     });
     // The gloss down the left of the glass.
     const sheen = ctx.createLinearGradient(x, y, x + w, y);
@@ -211,6 +329,9 @@ const draw = () => {
       ctx.restore();
     }
   });
+
+  drawFlights();
+  drawPops(dt);
 
   const left = Math.max(0, (ends - performance.now()) / 1000);
   ctx.fillStyle = "#3d5566";

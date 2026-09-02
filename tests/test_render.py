@@ -14,7 +14,7 @@ import pytest
 
 from gamehub import config
 
-PAGES = ["hub", "games/pointer-demo/index.html", "games/snake/index.html",
+PAGES = ["hub", "games/balloon-rush/index.html", "games/snake/index.html",
          "games/colour-sort/index.html"]
 
 pytestmark = pytest.mark.skipif(shutil.which("chromium") is None,

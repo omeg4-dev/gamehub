@@ -3,7 +3,8 @@
 // every screen here can be built and checked without a phone in hand, and
 // so the desk is still usable when the phone is charging.
 const Input = (() => {
-  const listeners = {pointer: [], button: [], gesture: [], phone: [], hello: []};
+  const listeners = {pointer: [], button: [], gesture: [], flick: [],
+                     phone: [], players: [], hello: []};
   const on = (kind, fn) => listeners[kind].push(fn);
   const emit = message => (listeners[message.type] || []).forEach(fn => fn(message));
 
@@ -23,11 +24,16 @@ const Input = (() => {
     }
   };
 
+  // The desk counts as player one, so a mouse can drive everything a phone
+  // can -- including the multiplayer games, one seat of them.
   addEventListener("mousemove", e => emit({
-    type: "pointer", x: e.clientX / innerWidth, y: e.clientY / innerHeight,
+    type: "pointer", player: 1,
+    x: e.clientX / innerWidth, y: e.clientY / innerHeight,
   }));
-  addEventListener("mousedown", () => emit({type: "button", name: "a", down: true}));
-  addEventListener("mouseup", () => emit({type: "button", name: "a", down: false}));
+  addEventListener("mousedown",
+    () => emit({type: "button", player: 1, name: "a", down: true}));
+  addEventListener("mouseup",
+    () => emit({type: "button", player: 1, name: "a", down: false}));
 
   const KEYS = {
     " ": "a", Enter: "a", Backspace: "b", Escape: "home",
@@ -37,7 +43,7 @@ const Input = (() => {
     const name = KEYS[event.key];
     if (!name) return;
     event.preventDefault();
-    emit({type: "button", name, down});
+    emit({type: "button", player: 1, name, down});
   };
   addEventListener("keydown", e => !e.repeat && key(e, true));
   addEventListener("keyup", e => key(e, false));

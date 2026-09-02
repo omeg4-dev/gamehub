@@ -24,18 +24,38 @@
     <h1>Point your phone at the screen</h1>
     <img id="qr" alt="">
     <p id="address"></p>
+    <p class="muted">Up to four phones — everyone scans the same code.</p>
     <p class="muted">A mouse works too.</p>
   </div>
 </div>
 
+<div id="roster" class="roster"></div>
+
 <footer id="bar">
-  <button class="knob wide" id="hubbtn" data-act="home">HUB</button>
-  <div class="plate">
-    <span id="date"></span>
-    <span class="tick"></span>
+  <!-- The shelf is a shape, not a rectangle: a shallow sweep that hangs
+       lowest under the clock and rises to meet the two round buttons.
+       Drawn stretched, so the curve keeps its proportion on any screen
+       while the buttons above it stay circular. -->
+  <svg class="sweep" viewBox="0 0 1000 160" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="shelf" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff"/>
+        <stop offset="0.30" stop-color="#f1f6f9"/>
+        <stop offset="1" stop-color="#ccd8df"/>
+      </linearGradient>
+    </defs>
+    <path class="fill" d="M0 6 C 300 6 300 66 500 66 C 700 66 700 6 1000 6 L1000 160 L0 160 Z"/>
+    <path class="line" d="M0 6 C 300 6 300 66 500 66 C 700 66 700 6 1000 6"/>
+  </svg>
+
+  <button class="knob round" id="hubbtn" data-act="home">HUB</button>
+
+  <div class="clockstack">
     <span id="clock"></span>
+    <span id="date"></span>
   </div>
-  <button class="knob" id="phonebtn" data-act="qr" aria-label="show the phone code">
+
+  <button class="knob round" id="phonebtn" data-act="qr" aria-label="show the phone code">
     <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="3"/><line x1="9" y1="18.5" x2="15" y2="18.5"/></svg>
   </button>
 </footer>

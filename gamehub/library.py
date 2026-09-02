@@ -21,12 +21,16 @@ class Game:
     controls: list = field(default_factory=lambda: list(DEFAULT_CONTROLS))
     score_order: str = "high"
     cursor: str = "hub"
+    # "one" or "many": whether the other phones in the room are playing or
+    # watching. The hub keeps the menu to player one either way.
+    players: str = "one"
 
     def as_json(self):
         return {"slug": self.slug, "name": self.name, "entry": self.entry,
                 "description": self.description, "icon": self.icon,
                 "thumbnail": self.thumbnail, "controls": self.controls,
-                "scoreOrder": self.score_order, "cursor": self.cursor}
+                "scoreOrder": self.score_order, "cursor": self.cursor,
+                "players": self.players}
 
 
 @dataclass
@@ -51,7 +55,8 @@ def _load(folder):
                 thumbnail=data.get("thumbnail", "thumbnail.png"),
                 controls=data.get("controls", list(DEFAULT_CONTROLS)),
                 score_order=data.get("score", {}).get("order", "high"),
-                cursor=data.get("cursor", "hub"))
+                cursor=data.get("cursor", "hub"),
+                players=data.get("players", "one"))
 
 
 def discover(directory):

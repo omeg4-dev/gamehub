@@ -106,7 +106,40 @@ def colour_sort():
     save(image, "colour-sort")
 
 
+def balloon(image, x, y, r, colour, label=None, string=True):
+    """One balloon, lit from the top left like everything else in the menu."""
+    layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    pen = ImageDraw.Draw(layer)
+    if string:
+        pen.line([(x, y + r * 1.24), (x + r * .35, y + r * 1.9),
+                  (x, y + r * 2.5)], fill=(140, 165, 180, 190), width=int(2 * S),
+                 joint="curve")
+    pen.ellipse([x - r, y - r * 1.18, x + r, y + r * 1.18], fill=colour)
+    pen.polygon([(x - r * .16, y + r * 1.12), (x + r * .16, y + r * 1.12),
+                 (x, y + r * 1.36)], fill=colour)
+    # The highlight: a soft white ellipse up and to the left, the same place
+    # the plates in the menu are lit from.
+    pen.ellipse([x - r * .62, y - r * .92, x - r * .12, y - r * .28],
+                fill=(255, 255, 255, 150))
+    if label:
+        box = pen.textbbox((0, 0), label, font_size=int(r * 1.0))
+        pen.text((x - (box[2] - box[0]) / 2, y - (box[3] - box[1]) / 2 - r * .2),
+                 label, fill=(255, 255, 255, 235), font_size=int(r * 1.0))
+    image.alpha_composite(layer)
+
+
+def balloon_rush():
+    image, _ = new((205, 236, 253), (255, 255, 255))
+    image = image.convert("RGBA")
+    balloon(image, 118 * S, 168 * S, 46 * S, (255, 107, 107))
+    balloon(image, 386 * S, 150 * S, 44 * S, (77, 150, 255))
+    balloon(image, 256 * S, 128 * S, 52 * S, (255, 196, 46), "5")
+    balloon(image, 448 * S, 246 * S, 30 * S, (66, 80, 92))
+    save(image.convert("RGB"), "balloon-rush")
+
+
 if __name__ == "__main__":
     snake()
     colour_sort()
+    balloon_rush()
     sys.exit(0)

@@ -31,7 +31,7 @@ PORT = 8791
 SHOT = config.STATE_DIR / "shot"
 
 
-async def main(out, page, games_dir, web_dir):
+async def main(out, page, games_dir, web_dir, size="1600,900"):
     cert, key = tls.ensure_cert("127.0.0.1", SHOT)
     app = server.build_app(TOKEN, controller=Controller(),
                            store=Store(SHOT / "data"),
@@ -58,7 +58,7 @@ async def main(out, page, games_dir, web_dir):
                 "--ignore-certificate-errors", "--hide-scrollbars",
                 "--no-first-run", "--no-default-browser-check",
                 f"--user-data-dir={profile}",
-                "--window-size=1600,900", f"--screenshot={out}",
+                f"--window-size={size}", f"--screenshot={out}",
                 # Console messages come back on stderr, and a page that
                 # threw while parsing draws a blank picture that looks like
                 # a design decision. Better to fail loudly.
@@ -89,5 +89,9 @@ if __name__ == "__main__":
                              "or games/<slug>/index.html")
     parser.add_argument("--games", type=pathlib.Path)
     parser.add_argument("--web", type=pathlib.Path)
+    # The phone page is not a television: shooting it at 1600x900 says
+    # nothing about the thing that is actually held in a hand.
+    parser.add_argument("--size", default="1600,900",
+                        help="browser window, as WIDTH,HEIGHT")
     args = parser.parse_args()
-    asyncio.run(main(args.out, args.page, args.games, args.web))
+    asyncio.run(main(args.out, args.page, args.games, args.web, args.size))

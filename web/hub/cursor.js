@@ -1,6 +1,6 @@
-// The hand. Drawn by the hub rather than by the compositor, because the
-// system pointer is not ours to move and because a Wii cursor leans into
-// the direction it is travelling, which no system cursor does.
+// The hands. Drawn by the hub rather than by the compositor, because the
+// system pointer is not ours to move, because a Wii cursor leans into the
+// direction it is travelling, and because there can be four of them.
 //
 // One closed path, not a fist plus a finger plus a thumb: three filled
 // shapes with the same outline show their seams where they overlap.
@@ -10,7 +10,19 @@ const Cursor = (() => {
   // A hand held out at a screen is never vertical, so neither is this one:
   // REST is the tilt it returns to, and lean is added on top while moving.
   const REST = -0.13;
-  let x = 0.5, y = 0.5, lean = 0, alive = true, last = 0.5;
+  const DEFAULT = ["#3ec7ff", "#ff6f5e", "#5fd36a", "#ffc746"];
+
+  const hands = new Map();          // player number -> where its hand is
+  let alive = false;
+  let hidden = false;
+
+  const handFor = n => {
+    if (!hands.has(n)) {
+      hands.set(n, {x: 0.5, y: 0.5, at: [0.5, 0.5], lean: 0, last: 0.5,
+                    colour: DEFAULT[(n - 1) % DEFAULT.length], here: true});
+    }
+    return hands.get(n);
+  };
 
   const resize = () => {
     canvas.width = innerWidth * devicePixelRatio;
@@ -20,7 +32,7 @@ const Cursor = (() => {
   addEventListener("resize", resize);
   resize();
 
-  const hand = () => {
+  const shape = () => {
     ctx.beginPath();
     ctx.moveTo(-7, -14);
     ctx.lineTo(-7, -30);                       // the index finger, extended
@@ -39,61 +51,110 @@ const Cursor = (() => {
     ctx.closePath();
   };
 
-  const draw = () => {
-    ctx.clearRect(0, 0, innerWidth, innerHeight);
-    const px = x * innerWidth, py = y * innerHeight;
+  const one = (hand, number) => {
     const size = Math.min(innerWidth, innerHeight) / 620;
     ctx.save();
-    ctx.globalAlpha = alive ? 1 : 0.3;
-    ctx.translate(px, py);
-    ctx.rotate(REST + lean);
+    ctx.globalAlpha = hand.here && alive ? 1 : 0.28;
+    ctx.translate(hand.at[0] * innerWidth, hand.at[1] * innerHeight);
+    ctx.rotate(REST + hand.lean);
     ctx.scale(size, size);
 
-    ctx.shadowColor = "rgba(20,55,80,.5)";
-    ctx.shadowBlur = 16;
-    ctx.shadowOffsetY = 6;
+    // The glove throws its own colour onto the plate underneath it, which
+    // is how four hands stay four hands in a photograph of a television.
+    ctx.shadowColor = hand.colour;
+    ctx.shadowBlur = 26;
+    ctx.shadowOffsetY = 0;
     ctx.fillStyle = "#ffffff";
-    hand();
+    shape();
+    ctx.fill();
+
+    ctx.shadowColor = "rgba(20,55,80,.45)";
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = 6;
+    shape();
     ctx.fill();
 
     ctx.shadowColor = "transparent";
     ctx.strokeStyle = "#2f4d61";
     ctx.lineWidth = 3;
     ctx.lineJoin = "round";
-    hand();
+    shape();
     ctx.stroke();
 
-    // A soft blue sheen down the left of the glove, the way the Wii's hand
-    // is lit from the screen it is pointing at.
+    // A sheen down the left of the glove, in this player's colour, the way
+    // the Wii's hand is lit by the screen it is pointing at.
     const sheen = ctx.createLinearGradient(-18, -39, 16, 26);
-    sheen.addColorStop(0, "rgba(120,195,235,.55)");
-    sheen.addColorStop(.55, "rgba(255,255,255,0)");
+    sheen.addColorStop(0, hand.colour);
+    sheen.addColorStop(.5, "rgba(255,255,255,0)");
+    ctx.globalAlpha *= .5;
     ctx.fillStyle = sheen;
-    hand();
+    shape();
     ctx.fill();
+    ctx.globalAlpha /= .5;
 
-    // The player number, which is how you know whose hand it is.
     ctx.beginPath();
-    ctx.arc(21, 30, 9, 0, Math.PI * 2);
-    ctx.fillStyle = "#2f4d61";
+    ctx.arc(21, 30, 9.5, 0, Math.PI * 2);
+    ctx.fillStyle = hand.colour;
     ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "700 12px 'Hub Round', system-ui, sans-serif";
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#20404f";
+    ctx.font = "800 12px 'Hub Round', system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("1", 21, 31);
+    ctx.fillText(String(number), 21, 31);
 
     ctx.restore();
+  };
+
+  const draw = () => {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    if (!hidden) {
+      // Drawn back to front so player one's hand is the one on top.
+      for (const n of [...hands.keys()].sort((a, b) => b - a)) {
+        const hand = hands.get(n);
+        // A last sixth of the distance every frame. The server already
+        // smooths the aim; this only takes the stairs out of a 60 Hz
+        // stream arriving on a 144 Hz screen.
+        hand.at[0] += (hand.x - hand.at[0]) * .35;
+        hand.at[1] += (hand.y - hand.at[1]) * .35;
+        hand.lean += (Math.max(-0.35, Math.min(0.35, (hand.x - hand.last) * 8))
+                      - hand.lean) * .2;
+        hand.last = hand.x;
+        one(hand, n);
+      }
+    }
     requestAnimationFrame(draw);
   };
   requestAnimationFrame(draw);
 
   Input.on("pointer", p => {
-    lean = Math.max(-0.35, Math.min(0.35, (p.x - last) * 8));
-    last = p.x;
-    x = p.x; y = p.y;
+    const hand = handFor(p.player || 1);
+    hand.x = p.x;
+    hand.y = p.y;
   });
+
+  Input.on("players", message => {
+    const here = new Set();
+    for (const player of message.players) {
+      here.add(player.n);
+      const hand = handFor(player.n);
+      hand.colour = player.colour;
+      hand.here = true;
+    }
+    for (const [n, hand] of hands) hand.here = here.has(n);
+    // A hand nobody is holding any more should not be left on the screen.
+    for (const n of [...hands.keys()]) if (!here.has(n) && n !== 1) hands.delete(n);
+  });
+
   Input.on("phone", p => { alive = p.connected; });
 
-  return {at: () => [x * innerWidth, y * innerHeight]};
+  return {
+    at: (n = 1) => {
+      const hand = handFor(n);
+      return [hand.at[0] * innerWidth, hand.at[1] * innerHeight];
+    },
+    hide: on => { hidden = on; },
+  };
 })();

@@ -1,0 +1,8 @@
+{
+  "name": "Balloon Rush",
+  "entry": "index.html",
+  "description": "Everyone points, everyone pops. Gold is worth five, bombs cost you three.",
+  "controls": ["pointer", "a", "gesture"],
+  "players": "many",
+  "score": { "order": "high" }
+}

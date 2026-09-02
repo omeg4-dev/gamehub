@@ -1,7 +1,0 @@
-{
-  "name": "Balloon Pop",
-  "entry": "index.html",
-  "description": "Point, press A, pop. Swing for a bonus.",
-  "controls": ["pointer", "a", "gesture"],
-  "score": { "order": "high" }
-}

@@ -40,6 +40,21 @@ D_CUTOFF = 1.0
 SWING_MS2 = 21.6                  # ~2.2 g, gravity already removed
 SWING_REFRACTORY = 0.25           # seconds; one swing is one event
 
+# --- flicks -----------------------------------------------------------
+# A flick is a *rate*, not an angle. Holding the phone tilted must do
+# nothing at all, or a game you steer with it becomes a game you fight
+# with: you would have to hold the phone level to go straight.
+FLICK_RATE = 3.4                  # rad/s of aim movement that counts (~195 deg/s)
+FLICK_REARM = 1.4                 # must slow below this before the next one
+FLICK_REFRACTORY = 0.12           # seconds; one wrist snap is one event
+
+# --- players ----------------------------------------------------------
+MAX_PLAYERS = 4
+# Player one is silver, like the remote that came in the box. The rest are
+# told apart by colour alone, so these have to survive a photograph of a
+# television across a room.
+PLAYER_COLOURS = ["#3ec7ff", "#ff6f5e", "#5fd36a", "#ffc746"]
+
 # --- liveness ---------------------------------------------------------
 IDLE_TIMEOUT = 1.0                # seconds without a frame = phone gone
 FRAME_HZ = 60

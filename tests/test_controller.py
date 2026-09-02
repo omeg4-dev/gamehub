@@ -91,3 +91,78 @@ def test_sensitivity_is_remembered_and_reported():
     c = Controller()
     c.set_sensitivity(1.5)
     assert c.state()["sensitivity"] == 1.5
+
+
+def sweep(controller, axis, degrees, seconds, start=0.0, frames=None):
+    """Turn the phone through an angle at a constant speed.
+
+    Returns everything the controller had to say about it, which is the
+    only honest way to ask "was that one flick or four".
+    """
+    frames = frames or max(1, int(seconds * config.FRAME_HZ))
+    events = []
+    for i in range(1, frames + 1):
+        q = axis(degrees * i / frames)
+        events += controller.frame(q, STILL, start + seconds * i / frames)
+    return events
+
+
+def about_x(degrees):
+    half = math.radians(degrees) / 2
+    return (math.cos(half), math.sin(half), 0.0, 0.0)
+
+
+def flicks(events):
+    return [e for e in events if e["type"] == "flick"]
+
+
+def test_a_wrist_snap_is_exactly_one_flick():
+    """Six frames of hard acceleration must not be six turns."""
+    c = Controller()
+    c.frame(IDENT, STILL, 0.0)
+    assert [e["dir"] for e in flicks(sweep(c, about_z, 30, 0.12, start=0.0))] \
+        == ["left"]
+
+
+def test_a_phone_held_at_a_tilt_never_flicks():
+    """The point of measuring speed: holding it over means go straight, not
+    turn forever."""
+    c = Controller()
+    c.frame(IDENT, STILL, 0.0)
+    sweep(c, about_z, 30, 0.12)
+    assert flicks(hold(c, about_z(30), seconds=2.0)) == []
+
+
+def test_a_slow_pan_is_aiming_not_flicking():
+    c = Controller()
+    c.frame(IDENT, STILL, 0.0)
+    assert flicks(sweep(c, about_z, 30, 1.5)) == []
+
+
+def test_flicks_have_the_four_directions():
+    c = Controller()
+    c.frame(IDENT, STILL, 0.0)
+    assert flicks(sweep(c, about_z, -30, 0.12))[0]["dir"] == "right"
+    c = Controller()
+    c.frame(IDENT, STILL, 0.0)
+    # +beta tips the top edge away from you, which is up the screen.
+    assert flicks(sweep(c, about_x, 30, 0.12))[0]["dir"] == "up"
+
+
+def test_two_snaps_with_a_pause_are_two_flicks():
+    c = Controller()
+    c.frame(IDENT, STILL, 0.0)
+    events = sweep(c, about_z, 25, 0.1, start=0.0)
+    events += hold(c, about_z(25), seconds=0.4)
+    events += [e for e in sweep(c, lambda d: about_z(25 + d), 25, 0.1, start=0.6)]
+    assert len(flicks(events)) == 2
+
+
+def test_the_flick_threshold_can_be_turned_down_for_a_gentler_wrist():
+    slow = Controller()
+    slow.frame(IDENT, STILL, 0.0)
+    assert flicks(sweep(slow, about_z, 20, 0.2)) == []
+    slow2 = Controller()
+    slow2.set_flick_rate(1.6)
+    slow2.frame(IDENT, STILL, 0.0)
+    assert len(flicks(sweep(slow2, about_z, 20, 0.2))) == 1

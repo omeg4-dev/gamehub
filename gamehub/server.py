@@ -17,6 +17,7 @@ from aiohttp import WSMsgType, web
 
 from . import config, library, net
 from .controller import Controller
+from .players import Players
 from .store import Store
 
 log = logging.getLogger("gamehub")
@@ -25,6 +26,7 @@ log = logging.getLogger("gamehub")
 # the only names shared between build_app and every handler below.
 TOKEN = web.AppKey("token", str)
 CONTROLLER = web.AppKey("controller", Controller)
+PLAYERS = web.AppKey("players", Players)
 STORE = web.AppKey("store", Store)
 GAMES_DIR = web.AppKey("games_dir", object)
 WEB_DIR = web.AppKey("web_dir", object)
@@ -55,7 +57,10 @@ def build_app(token, *, controller=None, store=None, games_dir=None,
               web_dir=None, phone_url=""):
     app = web.Application()
     app[TOKEN] = token
-    app[CONTROLLER] = controller or Controller()
+    app[PLAYERS] = Players(first=controller)
+    # Player one is the whole room until a second phone turns up, so the
+    # single-controller name still means something.
+    app[CONTROLLER] = app[PLAYERS].one
     app[STORE] = store or Store()
     app[GAMES_DIR] = games_dir or config.GAMES_DIR
     app[WEB_DIR] = web_dir or config.WEB_DIR
@@ -161,15 +166,39 @@ async def api_qr(request):
     return web.json_response({"url": url, "png": f"data:image/png;base64,{png}"})
 
 
+async def _roll_call(app):
+    """Tell everybody who is in the room.
+
+    Both ways round: the hub draws a cursor per player, and each phone
+    shows its own number, so neither can be left holding a stale list.
+    """
+    who = {"type": "players", "players": app[PLAYERS].as_json()}
+    await app[HUB].send(who)
+    await app[HUB].send({"type": "phone", "connected": bool(app[PLAYERS].here())})
+    await app[PHONES].send(who)
+
+
 async def ws_phone(request):
     socket = web.WebSocketResponse(heartbeat=20)
     await socket.prepare(request)
-    controller = request.app[CONTROLLER]
     hub, phones = request.app[HUB], request.app[PHONES]
+    players = request.app[PLAYERS]
+    player = players.join(socket)
+    if player is None:
+        # Four is the cap the hub is drawn for. Saying so beats a fifth
+        # phone that connects, works, and is invisible.
+        await socket.send_json({"type": "full", "limit": len(players.slots)})
+        await socket.close()
+        return socket
+    controller = player.controller
     phones.sockets.add(socket)
+    calibrating = False
+    frames = 0
     await socket.send_json({"type": "hello",
-                            "sensitivity": request.app[STORE].sensitivity})
-    await hub.send({"type": "phone", "connected": True})
+                            "sensitivity": request.app[STORE].sensitivity,
+                            "flick": controller.flick_rate,
+                            **player.as_json()})
+    await _roll_call(request.app)
     try:
         async for message in socket:
             if message.type is not WSMsgType.TEXT:
@@ -179,11 +208,24 @@ async def ws_phone(request):
             if kind == "frame":
                 for event in controller.frame(tuple(data["q"]),
                                               tuple(data["a"]), data["t"]):
-                    await hub.send(event)
+                    await hub.send({**event, "player": player.number})
+                frames += 1
+                if calibrating and frames % 6 == 0:
+                    await socket.send_json({"type": "peak",
+                                            "rate": controller.take_peak()})
             elif kind == "button":
-                await hub.send(controller.button(data["name"], data["down"]))
+                await hub.send({**controller.button(data["name"], data["down"]),
+                                "player": player.number})
             elif kind == "recentre":
                 controller.recentre()
+            elif kind == "name":
+                player.name = str(data.get("name", ""))[:12] or f"P{player.number}"
+                await _roll_call(request.app)
+            elif kind == "calibrate":
+                calibrating = bool(data.get("on"))
+                controller.take_peak()
+            elif kind == "flick":
+                controller.set_flick_rate(data["value"])
             elif kind == "trace":
                 # A recorded hand, kept so the tuning constants can be
                 # argued with in pytest rather than on the sofa.
@@ -197,7 +239,8 @@ async def ws_phone(request):
                 request.app[STORE].sensitivity = data["value"]
     finally:
         phones.sockets.discard(socket)
-        await hub.send({"type": "phone", "connected": False})
+        players.leave(socket)
+        await _roll_call(request.app)
     return socket
 
 
@@ -205,17 +248,30 @@ async def ws_hub(request):
     socket = web.WebSocketResponse(heartbeat=20)
     await socket.prepare(request)
     hub, phones = request.app[HUB], request.app[PHONES]
+    players = request.app[PLAYERS]
     hub.sockets.add(socket)
     # A hub that has just loaded knows nothing. Without this it would show
     # the fullscreen "point your phone at the screen" panel over a menu the
     # phone is already driving -- every time the page reloads.
-    await socket.send_json({"type": "phone", "connected": bool(phones.sockets)})
+    await socket.send_json({"type": "phone",
+                            "connected": bool(players.here())})
+    await socket.send_json({"type": "players", "players": players.as_json()})
     try:
         async for message in socket:
             if message.type is WSMsgType.TEXT:
                 # The hub tells the phone what is running, so the controller
-                # can dim the buttons this game ignores.
-                await phones.send(message.json())
+                # can dim the buttons this game ignores. A message addressed
+                # to one player -- a rumble for whoever just got hit -- goes
+                # to that phone alone.
+                body = message.json()
+                target = players.by_number(body.get("player") or 0)
+                if target is not None and target.socket is not None:
+                    try:
+                        await target.socket.send_json(body)
+                    except Exception:               # noqa: BLE001
+                        pass
+                else:
+                    await phones.send(body)
     finally:
         hub.sockets.discard(socket)
     return socket

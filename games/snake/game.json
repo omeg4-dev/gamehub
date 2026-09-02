@@ -1,14 +1,8 @@
 {
   "name": "Snake",
   "entry": "index.html",
-  "description": "Steer with the d-pad, or just point where you want to go.",
-  "controls": [
-    "pointer",
-    "dpad",
-    "a"
-  ],
+  "description": "Snap the phone the way you want to go. Hold it tilted and nothing happens.",
+  "controls": ["dpad", "a", "b"],
   "cursor": "none",
-  "score": {
-    "order": "high"
-  }
+  "score": {"order": "high"}
 }

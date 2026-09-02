@@ -10,14 +10,17 @@ def source():
 
 def test_every_control_the_spec_promises_is_on_the_page():
     markup = HTML.read_text()
-    for control in ("btn-a", "btn-b", "dpad", "btn-home", "btn-pause",
-                    "btn-recentre", "sensitivity"):
+    for control in ("btn-a", "btn-b", "dpad", "btn-recentre", "sensitivity",
+                    "name", "flick", "btn-cal"):
         assert f'id="{control}"' in markup, control
+    for named in ("home", "pause", "a", "b", "up", "down", "left", "right"):
+        assert f'data-name="{named}"' in markup, named
 
 
 def test_it_sends_the_four_message_types_the_server_handles():
     text = source()
-    for kind in ('"frame"', '"button"', '"recentre"', '"sensitivity"'):
+    for kind in ('"frame"', '"button"', '"recentre"', '"sensitivity"',
+                 '"name"', '"flick"', '"calibrate"'):
         assert kind in text, kind
 
 
@@ -38,3 +41,18 @@ def test_it_says_so_when_the_sensors_never_fire():
 
 def test_nothing_scrolls_or_zooms():
     assert "touch-action" in (config.WEB_DIR / "phone" / "phone.css").read_text()
+
+
+def test_it_wears_the_colour_the_server_gave_this_player():
+    """Four phones that all look like player one is four phones nobody can
+    tell apart across a sofa."""
+    assert "--me" in source()
+    assert "--me" in (config.WEB_DIR / "phone" / "phone.css").read_text()
+
+
+def test_a_rumble_addressed_here_reaches_the_motor():
+    assert '"rumble"' in source() and "navigator.vibrate" in source()
+
+
+def test_a_fifth_phone_is_told_the_room_is_full():
+    assert '"full"' in source()

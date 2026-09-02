@@ -19,7 +19,7 @@
   --plate-lo: #c3ced5;
   --plate-hi: #fdfefe;
   --edge: #b4c3cc;
-  --bar: 13vmin;
+  --bar: 16vmin;
 }
 
 * { box-sizing: border-box; }
@@ -31,14 +31,14 @@ html, body {
   letter-spacing: .01em;
   /* Not flat white: the menu sits in a lit room, brightest overhead. */
   background:
-    radial-gradient(140% 90% at 50% -20%, #ffffff 0%, #f3f8fb 45%, #dde8ef 100%),
-    #dde8ef;
+    linear-gradient(#ffffff 0%, #fbfdfe 55%, #eef3f6 100%),
+    #f6f9fb;
 }
 /* A vignette, so the plates float instead of lying on paper. */
 body::before {
   content: ""; position: fixed; inset: 0; pointer-events: none;
-  background: radial-gradient(120% 80% at 50% 45%,
-              rgba(255,255,255,0) 55%, rgba(120,150,170,.20) 100%);
+  background: radial-gradient(125% 85% at 50% 42%,
+              rgba(255,255,255,0) 62%, rgba(120,150,170,.13) 100%);
 }
 
 /* --- the channel grid ------------------------------------------------- */
@@ -46,20 +46,21 @@ body::before {
   position: fixed; inset: 0 0 var(--bar) 0;
   display: grid; grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 2.4vmin; padding: 4.4vmin 5.5vmin 3.4vmin;
+  gap: 2.1vmin; padding: 3.6vmin 5vmin 2.6vmin;
 }
 
 /* Every slot is a plate. A slot with no game in it is still a plate --
    twelve of them, always, which is most of what the menu looks like. */
 .slot, .card {
-  position: relative; border-radius: 1.6vmin;
-  border: .35vmin solid #ffffff;
+  position: relative; border-radius: 1.5vmin;
+  border: .3vmin solid #ffffff;
   box-shadow:
-    0 0 0 .14vmin var(--edge),
-    0 .45vmin .9vmin rgba(70,100,120,.20);
+    0 0 0 .13vmin #c8d5dc,
+    0 .35vmin .8vmin rgba(70,100,120,.14);
 }
-.slot { background: linear-gradient(#d5dfe6, #c6d3dc);
-  box-shadow: 0 0 0 .14vmin var(--edge), inset 0 .6vmin 1.6vmin rgba(80,110,132,.30); }
+.slot { background: linear-gradient(#fbfdfe 0%, #f2f6f9 55%, #e6edf1 100%);
+  box-shadow: 0 0 0 .13vmin #ccd8de,
+              inset 0 .5vmin 1.4vmin rgba(120,150,170,.16); }
 /* An empty slot is a hole, not a plate: it gets the recess but not the
    gloss, which is what stops it reading as a game with no picture. */
 .slot::after { background: linear-gradient(rgba(255,255,255,.32),
@@ -67,7 +68,7 @@ body::before {
                                            rgba(255,255,255,0)); }
 
 .card {
-  background: linear-gradient(#ffffff, #eef4f8);
+  background: linear-gradient(#ffffff 0%, #ffffff 62%, #f4f8fa 100%);
   display: grid; place-items: center; overflow: hidden;
   transition: transform .13s ease, box-shadow .13s ease, filter .13s ease;
 }
@@ -138,45 +139,78 @@ body::before {
 /* --- the shelf -------------------------------------------------------- */
 footer {
   position: fixed; inset: auto 0 0 0; height: var(--bar); z-index: 2;
-  display: flex; align-items: center; gap: 1.6vmin;
-  padding: 1.4vmin 2.4vmin;
-  border-radius: 3vmin 3vmin 0 0;
-  border-top: .35vmin solid #ffffff;
-  background: linear-gradient(#fbfdfe 0%, #eaf0f4 38%, var(--plate-lo) 100%);
-  box-shadow: 0 -.4vmin 1.4vmin rgba(60,95,120,.22);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 3.2vmin;
+  /* The buttons hang over the top of the sweep, the way the console's do. */
+  overflow: visible;
 }
+.sweep { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1;
+  filter: drop-shadow(0 -.3vmin .9vmin rgba(60,95,120,.18)); }
+.sweep .fill { fill: url(#shelf); }
+/* The one blue line in the whole menu that is not a cursor: it traces the
+   shelf, and it is what your eye reads as "this is the console". */
+.sweep .line { fill: none; stroke: #8fd8f5; stroke-width: 3;
+  vector-effect: non-scaling-stroke; }
 
 .knob {
-  position: relative; height: 100%; aspect-ratio: 1; padding: 0;
+  position: relative; padding: 0;
   border-radius: 2vmin; border: .35vmin solid #fff;
   background: linear-gradient(var(--plate-hi), #cfdae1);
   box-shadow: 0 0 0 .12vmin var(--edge), 0 .35vmin .7vmin rgba(70,100,120,.25),
               inset 0 -.5vmin .8vmin rgba(255,255,255,.9);
-  color: #465c69;
-  font: 900 3.2vmin/1 "Hub Round", system-ui, sans-serif; letter-spacing: .04em;
+  color: #5d7484;
+  font: 900 2.9vmin/1 "Hub Round", system-ui, sans-serif; letter-spacing: .06em;
   transition: transform .13s ease, box-shadow .13s ease;
 }
-.knob.wide { aspect-ratio: 1.55; }
-.knob svg { width: 46%; height: 46%; fill: none; stroke: #465c69;
+/* Round, sunk into a paler ring: the two buttons on the console's face. */
+.knob.round {
+  width: 11.5vmin; height: 11.5vmin; border-radius: 50%;
+  margin-bottom: 1.6vmin;
+  box-shadow: 0 0 0 1.1vmin rgba(255,255,255,.75),
+              0 0 0 1.25vmin var(--edge),
+              0 .5vmin 1.2vmin rgba(70,100,120,.28),
+              inset 0 -.6vmin 1vmin rgba(255,255,255,.95);
+}
+.knob svg { width: 42%; height: 42%; fill: none; stroke: #5d7484;
   stroke-width: 1.8; stroke-linecap: round; }
 .knob.hot {
   transform: scale(1.07);
-  box-shadow: 0 0 0 .3vmin var(--glow), 0 0 2.4vmin rgba(53,198,255,.75);
+  box-shadow: 0 0 0 1.1vmin rgba(255,255,255,.85),
+              0 0 0 1.4vmin var(--glow),
+              0 0 3vmin rgba(53,198,255,.8);
 }
 
-.plate {
-  flex: 1; height: 100%; display: flex; align-items: center;
-  justify-content: space-between; gap: 2vmin; padding: 0 4vmin;
-  border-radius: 2vmin; border: .35vmin solid #fff;
-  background: linear-gradient(#f6fafc, #dae3e9);
-  box-shadow: 0 0 0 .12vmin var(--edge), inset 0 .5vmin 1.2vmin rgba(90,120,140,.20);
-  font-size: 4.2vmin; font-weight: 800; color: #43596a;
-  text-shadow: 0 .12vmin 0 rgba(255,255,255,.9);
+/* The clock, hung in the dip of the sweep. Thin and pale: it is furniture,
+   not information you came here for. */
+.clockstack {
+  display: grid; justify-items: center; gap: 0;
+  margin-bottom: 3.4vmin; text-align: center; pointer-events: none;
 }
-.plate .tick { width: .35vmin; height: 45%; border-radius: .2vmin;
-  background: linear-gradient(rgba(140,165,180,0), rgba(140,165,180,.75),
-                              rgba(140,165,180,0)); }
-#date { font-weight: 700; color: #5a7284; font-size: 3.4vmin; }
+#clock {
+  font-size: 8vmin; font-weight: 200; line-height: 1;
+  color: #a7b8c2; letter-spacing: .06em;
+  text-shadow: 0 .15vmin 0 rgba(255,255,255,.95);
+}
+#date {
+  font-size: 3.1vmin; font-weight: 800; color: #8698a4;
+  text-shadow: 0 .12vmin 0 rgba(255,255,255,.95);
+}
+
+/* Who is holding a phone. Four chips at most, and none at all when the
+   room is one person -- a scoreboard of one is clutter. */
+.roster {
+  position: fixed; right: 2.4vmin; bottom: calc(var(--bar) + 1vmin); z-index: 3;
+  display: flex; gap: 1vmin;
+}
+.roster .who {
+  display: flex; align-items: center; gap: .7vmin;
+  padding: .5vmin 1.2vmin .5vmin .6vmin; border-radius: 2vmin;
+  border: .3vmin solid #fff; background: linear-gradient(#fff, #e8eff3);
+  box-shadow: 0 0 0 .12vmin var(--edge), 0 .3vmin .7vmin rgba(70,100,120,.22);
+  font-size: 2vmin; font-weight: 800; color: #4a5f6d;
+}
+.roster .pip { width: 1.8vmin; height: 1.8vmin; border-radius: 50%;
+  box-shadow: inset 0 -.3vmin .4vmin rgba(0,0,0,.25); }
 
 /* --- the game, and the things that interrupt it ----------------------- */
 #stage { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 4; }

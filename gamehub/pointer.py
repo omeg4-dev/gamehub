@@ -111,18 +111,24 @@ class Aimer:
         self.sensitivity = 1.0
         self.reference = (1.0, 0.0, 0.0, 0.0)
         self.last = (0.5, 0.5)
+        # Where the phone is pointing before any smoothing. A flick is
+        # measured off this: the filter exists to hide fast movement, and
+        # fast movement is the whole signal a flick is made of.
+        self.raw = (0.0, 0.0)
         self._fx = OneEuro()
         self._fy = OneEuro()
 
     def recentre(self, q):
         """Call this the middle of the screen."""
         self.reference = q
+        self.raw = (0.0, 0.0)
         self._fx = OneEuro()
         self._fy = OneEuro()
         self.last = (0.5, 0.5)
 
     def update(self, q, t):
         yaw, pitch = aim(self.reference, q)
+        self.raw = (yaw, pitch)
         x = 0.5 + self.sensitivity * yaw / (2 * self.half_x)
         y = 0.5 - self.sensitivity * pitch / (2 * self.half_y)
         limit = 1 + config.OVERSHOOT

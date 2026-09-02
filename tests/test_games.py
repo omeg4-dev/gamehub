@@ -27,10 +27,10 @@ def run(script, game):
 def test_every_folder_in_games_loads():
     games, problems = library.discover(config.GAMES_DIR)
     assert problems == []
-    assert {g.slug for g in games} >= {"pointer-demo", "snake", "colour-sort"}
+    assert {g.slug for g in games} >= {"balloon-rush", "snake", "colour-sort"}
 
 
-@pytest.mark.parametrize("slug", ["pointer-demo", "snake", "colour-sort"])
+@pytest.mark.parametrize("slug", ["balloon-rush", "snake", "colour-sort"])
 def test_each_game_has_the_art_the_grid_asks_for(slug):
     """A missing thumbnail is a blank plate on the menu, which looks like a
     broken game rather than a game without a picture."""
@@ -46,7 +46,25 @@ def test_snake_obeys_its_three_rules():
         "wallKills": True,
         "applesGrow": True,
         "bitingItselfKills": True,
+        "followingItsTailIsFine": True,
         "applesAvoidTheSnake": True,
+        "aBackwardsFlickCannotKill": True,
+        "aQueuedTurnCannotBeUndoneIntoItself": True,
+    }
+
+
+@node
+def test_balloon_rush_scores_a_press_the_way_the_room_expects():
+    assert run("balloon-rush.js", "balloon-rush") == {
+        "aPopIsWorthOne": True,
+        "goldIsWorthFive": True,
+        "aBombCostsThree": True,
+        "aMissScoresNothing": True,
+        "theFrontBalloonPops": True,
+        "escapedBalloonsAreForgotten": True,
+        "aQuickSecondPopIsDoubled": True,
+        "aSlowSecondPopIsNotDoubled": True,
+        "combosAreNotShared": True,
     }
 
 

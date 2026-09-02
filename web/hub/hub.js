@@ -11,7 +11,7 @@ const connect = document.getElementById("connect");
 const problems = document.getElementById("problems");
 const flash = document.getElementById("flash");
 const pagers = [...document.querySelectorAll(".pager")];
-const hand = document.getElementById("cursor");
+const roster = document.getElementById("roster");
 
 // Twelve plates to a page, filled up with empty ones. The empty slots are
 // not padding: a menu that reflows every time a folder is dropped in stops
@@ -22,6 +22,7 @@ let games = [];
 let current = null;
 let hot = null;
 let page = 0;
+let players = [];
 
 const load = async () => {
   const body = await (await fetch(`${base}/api/games`)).json();
@@ -98,9 +99,11 @@ const showProblems = trouble => {
 };
 
 // --- pointing ----------------------------------------------------------
-Input.on("pointer", () => {
-  if (current) return;
-  const [px, py] = Cursor.at();
+// The menu is player one's. Four hands fighting over which channel opens
+// is not a feature, and a game that wants the other three says so itself.
+Input.on("pointer", event => {
+  if (current || (event.player || 1) !== 1) return;
+  const [px, py] = Cursor.at(1);
   const target = document.elementFromPoint(px, py)?.closest("[data-act]");
   const pick = target && !target.disabled ? target : null;
   if (pick === hot) return;
@@ -120,11 +123,15 @@ const open = game => {
   flash.classList.add("on");
   // A game that steers with the d-pad has no use for a hand hovering over
   // it; game.json says so with "cursor": "none".
-  hand.hidden = game.cursor === "none";
+  Cursor.hide(game.cursor === "none");
   Input.tell({type: "running", name: game.name, controls: game.controls});
   setTimeout(() => {
     stage.src = `${base}/games/${game.slug}/${game.entry}`;
     stage.hidden = false;
+    // A multiplayer game needs the roster before its first frame, not on
+    // the next time somebody joins.
+    stage.addEventListener("load", () => stage.contentWindow?.postMessage(
+      {gamehub: "players", players}, "*"), {once: true});
     grid.hidden = true;
     flash.classList.remove("on");
   }, 450);
@@ -135,7 +142,7 @@ const home = () => {
   stage.hidden = true;
   stage.src = "about:blank";
   grid.hidden = false;
-  hand.hidden = false;
+  Cursor.hide(false);
   grid.querySelector(".opening")?.classList.remove("opening");
   current = null;
   hot = null;
@@ -155,6 +162,7 @@ const press = act => {
 };
 
 Input.on("button", event => {
+  const player = event.player || 1;
   if (!event.down) {
     if (current) stage.contentWindow?.postMessage({gamehub: "button", ...event}, "*");
     return;
@@ -164,6 +172,7 @@ Input.on("button", event => {
     stage.contentWindow?.postMessage({gamehub: "button", ...event}, "*");
     return;
   }
+  if (player !== 1) return;
   if (event.name === "a") press(hot?.dataset.act);
   if (event.name === "left") turn(-1);
   if (event.name === "right") turn(1);
@@ -171,6 +180,8 @@ Input.on("button", event => {
 
 Input.on("gesture", event =>
   stage.contentWindow?.postMessage({gamehub: "gesture", ...event}, "*"));
+Input.on("flick", event =>
+  stage.contentWindow?.postMessage({gamehub: "flick", ...event}, "*"));
 Input.on("pointer", event =>
   current && stage.contentWindow?.postMessage({gamehub: "pointer", ...event}, "*"));
 
@@ -184,6 +195,12 @@ addEventListener("message", async event => {
   const message = event.data;
   if (!message || !message.gamehub || !current) return;
   if (message.gamehub === "exit") home();
+  if (message.gamehub === "rumble") {
+    // The game knows who just got hit; the server knows which socket that
+    // is. Neither of them has to know both.
+    Input.tell({type: "rumble", player: message.player || 1,
+                ms: Math.min(200, Number(message.ms) || 25)});
+  }
   if (message.gamehub === "submitScore") {
     await fetch(`${base}/api/scores/${current.slug}`,
                 {method: "POST", headers: {"Content-Type": "application/json"},
@@ -194,6 +211,27 @@ addEventListener("message", async event => {
     stage.contentWindow.postMessage(
       {gamehub: "highScores", id: message.id, scores: body.scores}, "*");
   }
+});
+
+// --- who is in the room -------------------------------------------------
+Input.on("players", message => {
+  players = message.players;
+  roster.replaceChildren();
+  // One player needs no scoreboard; four do.
+  if (players.length > 1) {
+    for (const player of players) {
+      const chip = document.createElement("div");
+      chip.className = "who";
+      const pip = document.createElement("span");
+      pip.className = "pip";
+      pip.style.background = player.colour;
+      const name = document.createElement("span");
+      name.textContent = player.name;
+      chip.append(pip, name);
+      roster.append(chip);
+    }
+  }
+  stage.contentWindow?.postMessage({gamehub: "players", players}, "*");
 });
 
 // --- the phone ---------------------------------------------------------

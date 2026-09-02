@@ -77,3 +77,31 @@ def test_the_shelf_carries_the_clock_and_the_two_knobs():
 def test_a_game_can_ask_for_the_hand_to_be_put_away():
     """Snake steers with the d-pad; a cursor floating over it is noise."""
     assert 'cursor === "none"' in source()
+
+
+def hub_js():
+    return (config.WEB_DIR / "hub" / "hub.js").read_text()
+
+
+def test_only_player_one_drives_the_menu():
+    """Four hands fighting over which channel opens is not a feature."""
+    text = hub_js()
+    assert '(event.player || 1) !== 1' in text
+    assert 'if (player !== 1) return;' in text
+
+
+def test_the_roster_is_drawn_from_the_server_not_guessed():
+    text = hub_js()
+    assert 'Input.on("players"' in text
+    assert 'player.colour' in text
+
+
+def test_every_player_gets_their_own_hand():
+    cursor = (config.WEB_DIR / "hub" / "cursor.js").read_text()
+    assert "hands" in cursor
+    assert "p.player || 1" in cursor
+
+
+def test_a_rumble_from_a_game_is_addressed_to_a_player():
+    text = hub_js()
+    assert '"rumble"' in text and "message.player" in text
