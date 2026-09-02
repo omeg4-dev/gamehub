@@ -10,5 +10,6 @@ PY
 update-desktop-database ~/.local/share/applications 2>/dev/null || true
 echo "installed ~/.local/share/applications/gamehub.desktop"
 echo
-echo "Open port 8730 for the phone:"
-echo "  sudo ufw allow proto tcp from 192.0.2.0/24 to any port 8730 comment 'gamehub'"
+echo "Open port 8730 to your own LAN so the phones can reach it -- and only"
+echo "to your own LAN. Substitute your subnet:"
+echo "  sudo ufw allow proto tcp from 10.0.0.0/24 to any port 8730 comment 'gamehub'"

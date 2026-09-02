@@ -8,8 +8,10 @@ import os
 from pathlib import Path
 
 PORT = 8730
-TV_IP = "192.0.2.30"          # only used to ask the routing table which
-                                  # of our addresses faces the living room
+# Any address on the LAN the console is plugged into. It is never connected
+# to -- it is only handed to the routing table, to ask which of this
+# machine's addresses faces that way. The television is the obvious choice.
+TV_IP = os.environ.get("GAMEHUB_TV_IP", "192.0.2.30")
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = ROOT / "web"
