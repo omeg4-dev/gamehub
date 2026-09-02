@@ -44,11 +44,13 @@ const render = stars => {
     if (!game) {
       const empty = document.createElement("div");
       empty.className = "slot";
+      empty.style.setProperty("--i", i);
       grid.append(empty);
       continue;
     }
     const card = document.createElement("div");
     card.className = "card";
+    card.style.setProperty("--i", i);
     card.dataset.slug = game.slug;
     card.dataset.act = `open:${game.slug}`;
     // Built as nodes, not as a string: a game.json is a drop-in file from
@@ -163,6 +165,11 @@ const press = act => {
 
 Input.on("button", event => {
   const player = event.player || 1;
+  // The plate under the hand gives while the button is held. It is two
+  // lines and it is most of why pressing A feels like anything at all.
+  if (event.name === "a" && !current && player === 1) {
+    hot?.classList.toggle("press", event.down);
+  }
   if (!event.down) {
     if (current) stage.contentWindow?.postMessage({gamehub: "button", ...event}, "*");
     return;

@@ -1,0 +1,8 @@
+{
+  "name": "Hot Potato",
+  "entry": "index.html",
+  "description": "The bomb buzzes in your hand and only you know how close it is. Point at someone and press A.",
+  "controls": ["pointer", "a", "b"],
+  "players": "many",
+  "score": { "order": "high" }
+}

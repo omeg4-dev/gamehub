@@ -57,6 +57,9 @@ async def main(out, page, games_dir, web_dir, size="1600,900"):
                 "chromium", "--headless", "--disable-gpu", "--no-sandbox",
                 "--ignore-certificate-errors", "--hide-scrollbars",
                 "--no-first-run", "--no-default-browser-check",
+                # The menu deals its plates in over a third of a second.
+                # Without this the photograph catches it half dealt.
+                "--force-prefers-reduced-motion",
                 f"--user-data-dir={profile}",
                 f"--window-size={size}", f"--screenshot={out}",
                 # Console messages come back on stderr, and a page that

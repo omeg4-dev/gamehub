@@ -13,6 +13,7 @@ const COMBO_MS = 1400;               // pop again inside this and it counts doub
 
 let balloons = [];
 let sparks = [];
+let floats = [];                     // "+5 x3", rising off the pop
 let scores = {};                     // player number -> points
 let combos = {};                     // player number -> {count, at}
 let pointers = {};                   // player number -> where that hand is
@@ -30,6 +31,7 @@ const random = () => {
 const reset = (at = 0) => {
   balloons = [];
   sparks = [];
+  floats = [];
   scores = {};
   combos = {};
   for (const player of room) scores[player.n] = 0;
@@ -218,6 +220,22 @@ const drawBalloon = balloon => {
   ctx.restore();
 };
 
+const drawFloats = dt => {
+  ctx.textAlign = "center";
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const float = floats[i];
+    float.life -= dt / 1000;
+    if (float.life <= 0) { floats.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.min(1, float.life * 1.8);
+    ctx.fillStyle = float.colour;
+    const size = unit() * .045 * (1 + (1 - float.life) * .25);
+    ctx.font = `900 ${size}px "Hub Round", system-ui, sans-serif`;
+    ctx.fillText(float.text, float.x * innerWidth,
+                 float.y * innerHeight - (1 - float.life) * unit() * .12);
+  }
+  ctx.globalAlpha = 1;
+};
+
 const drawSparks = dt => {
   for (let i = sparks.length - 1; i >= 0; i--) {
     const spark = sparks[i];
@@ -325,6 +343,7 @@ const frame = time => {
   ctx.clearRect(0, 0, innerWidth, innerHeight);
   for (const balloon of balloons) drawBalloon(balloon);
   drawSparks(dt);
+  drawFloats(dt);
   drawScores();
   if (over) drawOver();
   requestAnimationFrame(frame);
@@ -358,6 +377,9 @@ GameHub.on("button", event => {
   const colour = hit.kind === "gold" ? "#ffc42e"
                : hit.kind === "bomb" ? "#42505c" : hit.balloon.colour;
   burst(hit.balloon, colour);
+  floats.push({x: hit.balloon.x, y: hit.balloon.y, life: 1, colour,
+               text: hit.chain > 1 ? `${hit.points > 0 ? "+" : ""}${hit.points} x${hit.chain}`
+                                   : `${hit.points > 0 ? "+" : ""}${hit.points}`});
   if (hit.kind === "bomb") {
     blip(150, .3, "sawtooth");
     GameHub.rumble(player, 140);

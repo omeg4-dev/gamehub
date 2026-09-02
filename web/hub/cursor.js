@@ -19,7 +19,8 @@ const Cursor = (() => {
   const handFor = n => {
     if (!hands.has(n)) {
       hands.set(n, {x: 0.5, y: 0.5, at: [0.5, 0.5], lean: 0, last: 0.5,
-                    colour: DEFAULT[(n - 1) % DEFAULT.length], here: true});
+                    colour: DEFAULT[(n - 1) % DEFAULT.length], here: true,
+                    squash: 0});
     }
     return hands.get(n);
   };
@@ -52,7 +53,9 @@ const Cursor = (() => {
   };
 
   const one = (hand, number) => {
-    const size = Math.min(innerWidth, innerHeight) / 620;
+    // The hand closes a little as the button goes down and springs back
+    // when it comes up.
+    const size = Math.min(innerWidth, innerHeight) / 620 * (1 - hand.squash * .14);
     ctx.save();
     ctx.globalAlpha = hand.here && alive ? 1 : 0.28;
     ctx.translate(hand.at[0] * innerWidth, hand.at[1] * innerHeight);
@@ -122,6 +125,7 @@ const Cursor = (() => {
         hand.lean += (Math.max(-0.35, Math.min(0.35, (hand.x - hand.last) * 8))
                       - hand.lean) * .2;
         hand.last = hand.x;
+        hand.squash += ((hand.down ? 1 : 0) - hand.squash) * .3;
         one(hand, n);
       }
     }
@@ -146,6 +150,11 @@ const Cursor = (() => {
     for (const [n, hand] of hands) hand.here = here.has(n);
     // A hand nobody is holding any more should not be left on the screen.
     for (const n of [...hands.keys()]) if (!here.has(n) && n !== 1) hands.delete(n);
+  });
+
+  Input.on("button", event => {
+    if (event.name !== "a") return;
+    handFor(event.player || 1).down = event.down;
   });
 
   Input.on("phone", p => { alive = p.connected; });

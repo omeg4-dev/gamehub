@@ -11,6 +11,9 @@ function load(path, epilogue) {
                   addEventListener: () => {}};
   const sandbox = {
     innerWidth: 1600, innerHeight: 900, devicePixelRatio: 1,
+    // Games read the query string for a preview seat count; in node there
+    // is no address bar and the answer is always "no preview".
+    location: {search: ""}, URLSearchParams,
     document: {getElementById: () => canvas},
     addEventListener: () => {},
     requestAnimationFrame: () => 0,

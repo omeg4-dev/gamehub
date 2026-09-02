@@ -14,7 +14,13 @@ import pytest
 
 from gamehub import config
 
-PAGES = ["hub", "games/balloon-rush/index.html", "games/snake/index.html",
+PAGES = ["hub",
+         "phone",
+         "games/balloon-rush/index.html",
+         # Four seats, so the layout the party actually sees is the one
+         # that gets checked rather than the one-player waiting screen.
+         "games/hot-potato/index.html?players=4",
+         "games/snake/index.html",
          "games/colour-sort/index.html"]
 
 pytestmark = pytest.mark.skipif(shutil.which("chromium") is None,

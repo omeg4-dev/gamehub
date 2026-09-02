@@ -13,6 +13,7 @@ const START_TICK = 190, FAST_TICK = 82, SPEED_UP = 4;
 let snake, dir, queue, apple, dead, score, tick, best = 0;
 let elapsed = 0, last = 0, shake = 0, eaten = 0;
 const sparks = [];
+const floats = [];   // the score, leaving the apple behind it
 const board = {x: 0, y: 0, cell: 10};
 
 // --- rules --------------------------------------------------------------
@@ -37,6 +38,7 @@ const reset = () => {
   elapsed = 0;
   apple = free();
   sparks.length = 0;
+  floats.length = 0;
 };
 
 // A turn into your own neck is a mistake, not a death. The phone is a
@@ -74,6 +76,7 @@ const step = () => {
     tick = Math.max(FAST_TICK, tick - SPEED_UP);
     apple = free();
     burst(head);
+    floats.push({x: head.x + .5, y: head.y + .5, life: 1, text: `+10`});
     blip(660 + Math.min(9, eaten) * 40, 0.09);
     GameHub.rumble(1, 18);
   } else {
@@ -276,6 +279,21 @@ const drawSparks = dt => {
   ctx.globalAlpha = 1;
 };
 
+const drawFloats = dt => {
+  ctx.textAlign = "center";
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const float = floats[i];
+    float.life -= dt / 900;
+    if (float.life <= 0) { floats.splice(i, 1); continue; }
+    const [x, y] = at(float, -.5, -.5);
+    ctx.globalAlpha = Math.min(1, float.life * 1.6);
+    ctx.fillStyle = "#2f9e5e";
+    ctx.font = `900 ${board.cell * (.5 + (1 - float.life) * .12)}px "Hub Round", system-ui, sans-serif`;
+    ctx.fillText(float.text, x, y - (1 - float.life) * board.cell * 1.6);
+  }
+  ctx.globalAlpha = 1;
+};
+
 const drawScore = () => {
   ctx.textAlign = "center";
   ctx.fillStyle = "#8ba3b0";
@@ -327,6 +345,7 @@ const frame = time => {
   drawApple(time);
   drawSnake(progress, time);
   drawSparks(dt);
+  drawFloats(dt);
   ctx.restore();
   drawScore();
   requestAnimationFrame(frame);

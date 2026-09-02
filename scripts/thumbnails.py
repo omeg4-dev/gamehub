@@ -138,8 +138,54 @@ def balloon_rush():
     save(image.convert("RGB"), "balloon-rush")
 
 
+def face(pen, x, y, r, ring, holding=False):
+    """One of the pods from Hot Potato, drawn the same way the game draws
+    them: a white disc, a ring in that player's colour, and a face that
+    knows whether it is the one holding the bomb."""
+    pen.ellipse([x - r, y - r, x + r, y + r], fill=(255, 255, 255),
+                outline=ring, width=int(r * .13))
+    ink = (61, 88, 102)
+    for side in (-1, 1):
+        ex = x + side * r * .30
+        pen.ellipse([ex - r * .085, y - r * .30, ex + r * .085, y - r * .06],
+                    fill=ink)
+    if holding:
+        pen.ellipse([x - r * .17, y + r * .10, x + r * .17, y + r * .44], fill=ink)
+    else:
+        pen.arc([x - r * .26, y - r * .10, x + r * .26, y + r * .34],
+                start=20, end=160, fill=ink, width=int(r * .09))
+
+
+def hot_potato():
+    image, _ = new((255, 236, 214), (255, 255, 255))
+    image = image.convert("RGBA")
+    pen = ImageDraw.Draw(image)
+    face(pen, 132 * S, 190 * S, 74 * S, (62, 199, 255), holding=True)
+    face(pen, 380 * S, 190 * S, 74 * S, (255, 111, 94))
+    # The bomb, mid-throw, with the arc it is travelling on.
+    for i in range(22):
+        t = i / 21
+        bx = (132 + (380 - 132) * t) * S
+        by = (190 - 150 * (t * (1 - t) * 4)) * S
+        if i % 2:
+            pen.ellipse([bx - 3 * S, by - 3 * S, bx + 3 * S, by + 3 * S],
+                        fill=(150, 175, 190, 130))
+    bx, by, br = 256 * S, 108 * S, 34 * S
+    pen.ellipse([bx - br, by - br, bx + br, by + br], fill=(58, 70, 80))
+    pen.line([(bx, by - br), (bx + br * .7, by - br * 1.5),
+              (bx + br * .35, by - br * 1.95)], fill=(201, 139, 90),
+             width=int(br * .18), joint="curve")
+    pen.ellipse([bx + br * .35 - br * .28, by - br * 2.05 - br * .28,
+                 bx + br * .35 + br * .28, by - br * 2.05 + br * .28],
+                fill=(255, 209, 102))
+    pen.ellipse([bx - br * .5, by - br * .6, bx - br * .18, by - br * .3],
+                fill=(255, 255, 255, 90))
+    save(image.convert("RGB"), "hot-potato")
+
+
 if __name__ == "__main__":
     snake()
     colour_sort()
     balloon_rush()
+    hot_potato()
     sys.exit(0)

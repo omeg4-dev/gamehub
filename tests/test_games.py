@@ -27,10 +27,10 @@ def run(script, game):
 def test_every_folder_in_games_loads():
     games, problems = library.discover(config.GAMES_DIR)
     assert problems == []
-    assert {g.slug for g in games} >= {"balloon-rush", "snake", "colour-sort"}
+    assert {g.slug for g in games} >= {"balloon-rush", "snake", "colour-sort", "hot-potato"}
 
 
-@pytest.mark.parametrize("slug", ["balloon-rush", "snake", "colour-sort"])
+@pytest.mark.parametrize("slug", ["balloon-rush", "snake", "colour-sort", "hot-potato"])
 def test_each_game_has_the_art_the_grid_asks_for(slug):
     """A missing thumbnail is a blank plate on the menu, which looks like a
     broken game rather than a game without a picture."""
@@ -65,6 +65,24 @@ def test_balloon_rush_scores_a_press_the_way_the_room_expects():
         "aQuickSecondPopIsDoubled": True,
         "aSlowSecondPopIsNotDoubled": True,
         "combosAreNotShared": True,
+    }
+
+
+@node
+def test_hot_potato_only_allows_throws_that_make_sense():
+    assert run("hot-potato.js", "hot-potato") == {
+        "aFreshCatchCannotBeThrownOn": True,
+        "aHeldBombCanBeThrown": True,
+        "onlyTheHolderMayThrow": True,
+        "youCannotThrowItToYourself": True,
+        "theFuseStopsInTheAir": True,
+        "aSecondThrowInFlightIsRefused": True,
+        "itLandsInTheOtherHand": True,
+        "itExplodesOnTheHolder": True,
+        "theBombGoesToSomeoneStillAlive": True,
+        "aBangBringsAFreshFuse": True,
+        "theLastOneStandingWins": True,
+        "youCannotThrowItToSomebodyWhoIsOut": True,
     }
 
 

@@ -64,12 +64,21 @@ const deal = () => {
 
 // One backwards move: undo a pour that could legally have happened. Taking
 // j units off B and putting them on a tube that is empty or a different
-// colour is exactly the inverse of pouring j units of that colour onto B.
+// colour is the inverse of pouring j units of that colour onto B -- but
+// only if that forward pour would have been legal, and pouring onto a
+// different colour is not. So either the run being lifted is all of B (the
+// pour went into an empty tube) or some of that colour stays behind for it
+// to land on. Taking a whole run off a tube that has something else under
+// it invents a board that no sequence of legal pours can reach, and one
+// deal in a hundred was then unsolvable.
 const unpour = () => {
   const from = tubes.filter(t => t.length).sort(() => Math.random() - 0.5);
   for (const b of from) {
     const colour = topOf(b);
-    const j = 1 + ((Math.random() * runLength(b)) | 0);
+    const run = runLength(b);
+    const most = run === b.length ? run : run - 1;
+    if (most < 1) continue;
+    const j = 1 + ((Math.random() * most) | 0);
     const into = tubes.filter(a => a !== b && a.length + j <= DEPTH &&
                                    (a.length === 0 || topOf(a) !== colour));
     if (!into.length) continue;
