@@ -5,7 +5,12 @@ phones are in the room. It looks like a Wii, because that is the last console
 that got the important thing right: the hard part is not the games, it is the
 thirty seconds before the games.
 
-![the shelf](docs/hub.png)
+![the shelf](docs/demo.gif)
+
+*Two phones on the shelf, then in a game. Both of them are
+websocket clients speaking the handset protocol -- the server
+cannot tell, which is the whole point of keeping the pointer on
+the server side.*
 
 Open the hub on the TV and it shows a QR code. Anyone points a phone camera at
 it, taps through the certificate warning once, and their phone is a controller
