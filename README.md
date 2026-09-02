@@ -1,95 +1,86 @@
-# Game Hub
+<div align="center">
 
-A living-room game console made out of a television, a laptop and whatever
-phones are in the room. It looks like a Wii, because that is the last console
-that got the important thing right: the hard part is not the games, it is the
-thirty seconds before the games.
+# 🎮 Game Hub
 
-![the shelf](docs/demo.gif)
+**The TV is the screen. Everyone's phone is the remote.**
 
-*Two phones on the shelf, then in a game. Both of them are
-websocket clients speaking the handset protocol -- the server
-cannot tell, which is the whole point of keeping the pointer on
-the server side.*
+No app store, no pairing, no install — scan the QR code and your phone is a Wii remote.
 
-Open the hub on the TV and it shows a QR code. Anyone points a phone camera at
-it, taps through the certificate warning once, and their phone is a controller
-— tilt to move a cursor on the television, A and B under the thumb, a d-pad,
-and a motor that buzzes when something on screen hits them. Up to four at once,
-each with their own colour, their own name and their own cursor. No app store,
-no pairing, no install. A phone that reconnects gets its old slot back.
+<img src="docs/demo.gif" width="720" alt="Two phones driving the hub, then playing Balloon Rush">
 
-## How it works
+</div>
 
-The phone streams its orientation as quaternions, sixty times a second, over a
-token-gated HTTPS socket. **Everything else happens in Python.** The sensor
-fusion, the recentring, the mapping from an angle to a point on the screen, and
-the flick detector all live on the server, which means the entire feel of the
-pointer is testable with pytest and none of it depends on a browser.
+---
 
-```
-phone (quaternions) ── wss ──> server (fusion, aim, flicks) ── postMessage ──> game
-```
+### ✨ What it is
 
-A game is a folder with a `game.json` and an `index.html`. It never learns that
-a phone exists. It receives a pointer in 0..1 coordinates, button events, flicks
-and gestures, and it can ask a specific player's phone to buzz. That is the
-whole contract, and it is in `web/shared/gamehub-api.js`.
+A living-room console made of a television, a laptop, and whatever phones are in the room.
+Point a phone camera at the QR code on screen, accept the certificate once, and you have a
+cursor, a d-pad, A and B, and a motor that buzzes when something on screen hits you.
 
-## The games
+Up to **four at once** — own colour, own name, own cursor. Put your phone down, pick it back
+up, and you get your slot back.
 
-| Game | Players | What it is |
+### 🕹️ In the box
+
+| | | |
 |---|---|---|
-| **Snake** | 1 | Steer with a wrist flick. A flick is a *rate*, so holding the phone tilted does nothing. |
-| **Road Hop** | 1 | Lanes, a river, a level crossing, and an eagle if you fall behind. Axonometric voxels in canvas 2D. |
-| **Colour Sort** | 1 | Pour liquid between tubes. Boards are dealt by undoing legal pours from solved, so solvability is a property of construction. |
-| **Balloon Rush** | 1–4 | Everyone pops at once, combos, and a bomb that costs you three. |
-| **Hot Potato** | 2–4 | The bomb buzzes in *your* hand and only you know how close it is. Point at somebody and press A. |
+| 🐍 **Snake** | 1 player | Steer with a wrist flick. A flick is a *rate*, so holding the phone tilted does nothing. |
+| 🐔 **Road Hop** | 1 player | Lanes, a river, a level crossing, and an eagle if you fall behind. |
+| 🧪 **Colour Sort** | 1 player | Boards are dealt by undoing legal pours from solved, so every one is solvable. |
+| 🎈 **Balloon Rush** | 1–4 | Everyone pops at once. Combos, gold, and a bomb that costs you three. |
+| 💣 **Hot Potato** | 2–4 | The bomb buzzes in *your* hand and only you know how close it is. |
 
-`docs/plans/` has the designs for the next twenty.
+Twenty more are designed in [`docs/plans/`](docs/plans/).
 
-## Controls
+### 🧠 How it works
 
-The remote adapts. A game declares what it uses in `game.json`, and controls it
-ignores are removed from the phone rather than greyed out — and when what is
-left is A alone, the button stops being a circle and becomes the whole screen,
-so there is nothing to miss.
+The phone streams orientation as quaternions, sixty times a second, over a token-gated HTTPS
+socket. **Everything else happens in Python** — sensor fusion, recentring, the map from an
+angle to a point on screen, the flick detector. So the entire feel of the pointer is testable
+with pytest, and a game never learns that a phone exists.
 
-Flick sensitivity is not a guess: open the gear on the phone, press Calibrate,
-snap your wrist five times, and the threshold is set from what your hand
-actually does.
-
-## Running it
-
-```sh
-python -m gamehub          # then open the URL it prints on the TV
-./install.sh               # adds a desktop entry
+```
+phone (quaternions) ──wss──▶ server (fusion · aim · flicks) ──postMessage──▶ game
 ```
 
-Python 3.11+, `aiohttp`, `cryptography`, `pillow`, `qrcode`. Node and Chromium
-are optional and only used by the tests. The server generates its own
-self-signed certificate for whichever LAN address faces the television —
-phones need HTTPS before a browser will hand out motion sensors at all, which
-is the single most annoying fact about this entire project.
+A game is a folder with a `game.json` and an `index.html`. It gets a pointer in 0..1
+coordinates, buttons, flicks, and one call to buzz a specific player's phone. That's the whole
+contract.
 
-Nothing is written outside `~/.local/share/gamehub/` and
-`~/.local/state/gamehub/`.
+### 📱 The remote adapts
 
-## Tests
+Controls a game ignores are **removed** from the phone, not greyed out. When what's left is A
+alone, the button stops being a circle and becomes the whole screen — nothing to miss.
+
+Flick sensitivity isn't a guess either: tap ⚙️ → Calibrate, snap your wrist five times, and the
+threshold is set from what your hand actually does.
+
+### 🚀 Run it
 
 ```sh
-python -m pytest
+python -m gamehub     # open the URL it prints, on the TV
+./install.sh          # adds a desktop entry
 ```
 
-150 of them. The game rules run headless in node against a canvas-free
-`world.js`; every page is opened in headless Chromium and the check fails on
-any console error, because a game whose script throws while parsing paints
-nothing and nothing looks exactly like a deliberately empty screen.
+Python 3.11+, `aiohttp`, `cryptography`, `pillow`, `qrcode`. The server makes its own
+certificate for the LAN address facing the television — phones won't hand out motion sensors
+without HTTPS, which is the single most annoying fact about this project.
 
-A handful skip without recorded phone traces — the constants that decide how
-this feels are guesses until a real hand has moved a real phone, so the phone
-can record itself and the recording replays in pytest.
+Nothing is written outside `~/.local/share/gamehub/` and `~/.local/state/gamehub/`.
 
-## Licence
+### ✅ Tests
 
-MIT. All artwork is drawn in-repo, in code.
+```sh
+python -m pytest      # 150 passed
+```
+
+Game rules run headless in node against a canvas-free `world.js`. Every page is opened in
+headless Chromium and the check **fails on any console error** — a game whose script throws
+paints nothing, and nothing looks exactly like a deliberately empty screen.
+
+---
+
+<div align="center">
+<sub>MIT · every pixel of artwork drawn in-repo, in code</sub>
+</div>
