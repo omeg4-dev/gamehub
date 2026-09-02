@@ -60,8 +60,9 @@ setTimeout(() => {
 const started = performance.now();
 setInterval(() => {
   if (!seen) return;
-  send({type: "frame", t: (performance.now() - started) / 1000,
-        q: quaternion, a: accel});
+  const t = (performance.now() - started) / 1000;
+  send({type: "frame", t, q: quaternion, a: accel});
+  if (recording) recording.push({t, q: quaternion, a: accel});
 }, 1000 / 60);
 
 // --- buttons ----------------------------------------------------------
@@ -102,3 +103,22 @@ if (navigator.wakeLock) {
   document.addEventListener("visibilitychange",
     () => document.visibilityState === "visible" && hold());
 }
+
+// --- recording ---------------------------------------------------------
+//
+// The constants that decide how this feels are guesses until a real hand
+// has moved a real phone. Recording lets that hand be replayed in pytest.
+let recording = null;
+const recordButton = document.createElement("button");
+recordButton.textContent = "Record";
+document.getElementById("settings").prepend(recordButton);
+recordButton.addEventListener("click", () => {
+  if (recording) {
+    send({type: "trace", frames: recording});
+    recording = null;
+    recordButton.textContent = "Record";
+  } else {
+    recording = [];
+    recordButton.textContent = "Stop";
+  }
+});

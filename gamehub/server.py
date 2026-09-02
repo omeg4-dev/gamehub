@@ -9,7 +9,9 @@ token is the whole of the door; a middleware refuses anything else before a
 handler ever sees it.
 """
 import base64
+import json
 import logging
+import time
 
 from aiohttp import WSMsgType, web
 
@@ -182,6 +184,14 @@ async def ws_phone(request):
                 await hub.send(controller.button(data["name"], data["down"]))
             elif kind == "recentre":
                 controller.recentre()
+            elif kind == "trace":
+                # A recorded hand, kept so the tuning constants can be
+                # argued with in pytest rather than on the sofa.
+                path = config.STATE_DIR / "traces"
+                path.mkdir(parents=True, exist_ok=True)
+                name = path / f"trace-{int(time.time())}.json"
+                name.write_text(json.dumps(data["frames"]))
+                log.info("wrote %s (%d frames)", name, len(data["frames"]))
             elif kind == "sensitivity":
                 controller.set_sensitivity(data["value"])
                 request.app[STORE].sensitivity = data["value"]

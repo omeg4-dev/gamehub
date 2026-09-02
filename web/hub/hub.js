@@ -26,17 +26,35 @@ const load = async () => {
     const card = document.createElement("div");
     card.className = "card";
     card.dataset.slug = game.slug;
-    card.innerHTML =
-      `<img src="${base}/games/${game.slug}/${game.thumbnail}" alt="" ` +
-      `onerror="this.remove()">` +
-      `<span class="name">${game.name}</span>` +
-      (stars.has(game.slug) ? '<span class="star">&#9733;</span>' : "");
+    // Built as nodes, not as a string: a game.json is a drop-in file from
+    // wherever the folder came from, and its name is not markup.
+    const art = document.createElement("img");
+    art.src = `${base}/games/${game.slug}/${game.thumbnail}`;
+    art.alt = "";
+    art.addEventListener("error", () => art.remove());
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = game.name;
+    card.append(art, name);
+    if (stars.has(game.slug)) {
+      const star = document.createElement("span");
+      star.className = "star";
+      star.textContent = "\u2605";
+      card.append(star);
+    }
     grid.append(card);
   }
   if (body.problems.length) {
     problems.hidden = false;
-    problems.innerHTML = "<b>Games that would not load</b>" +
-      body.problems.map(p => `<div>${p.slug}: ${p.reason}</div>`).join("");
+    problems.replaceChildren();
+    const heading = document.createElement("b");
+    heading.textContent = "Games that would not load";
+    problems.append(heading);
+    for (const trouble of body.problems) {
+      const line = document.createElement("div");
+      line.textContent = `${trouble.slug}: ${trouble.reason}`;
+      problems.append(line);
+    }
   }
 };
 
@@ -99,6 +117,11 @@ Input.on("pointer", event =>
 
 // --- the game talking back ---------------------------------------------
 addEventListener("message", async event => {
+  // Only the running game may speak here. It is in our own iframe on our
+  // own origin; anything else claiming to be it is not.
+  if (event.origin !== location.origin || event.source !== stage.contentWindow) {
+    return;
+  }
   const message = event.data;
   if (!message || !message.gamehub || !current) return;
   if (message.gamehub === "exit") home();

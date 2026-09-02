@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import pytest
@@ -118,3 +119,24 @@ async def test_a_game_cannot_serve_a_file_above_its_own_folder(client):
 async def test_the_qr_endpoint_returns_a_data_uri(client):
     body = await (await client.get(f"/{TOKEN}/api/qr")).json()
     assert body["png"].startswith("data:image/png;base64,")
+
+
+async def test_a_recorded_trace_is_written_where_the_tests_can_read_it(
+        client, tmp_path, monkeypatch):
+    """The tuning loop depends on this file existing; a silent drop here
+    would look like a phone that never recorded anything."""
+    from gamehub import config
+    monkeypatch.setattr(config, "STATE_DIR", tmp_path / "state")
+    async with client.ws_connect(f"/{TOKEN}/ws/phone") as phone:
+        await phone.receive_json(timeout=2)
+        await phone.send_json({"type": "trace",
+                               "frames": [{"t": 0.0, "q": IDENT,
+                                           "a": [0, 0, 0]}]})
+        written = []
+        for _ in range(50):                  # the write is on the server's turn
+            written = list((tmp_path / "state" / "traces").glob("trace-*.json"))
+            if written:
+                break
+            await asyncio.sleep(0.02)
+    assert len(written) == 1
+    assert json.loads(written[0].read_text())[0]["t"] == 0.0
