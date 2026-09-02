@@ -1,0 +1,8 @@
+{
+  "name": "Road Hop",
+  "entry": "index.html",
+  "description": "Hop across the roads, the river and the tracks. Don't stop, and don't look back.",
+  "controls": ["dpad", "a", "b"],
+  "cursor": "none",
+  "score": { "order": "high" }
+}

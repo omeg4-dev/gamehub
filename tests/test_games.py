@@ -17,9 +17,9 @@ node = pytest.mark.skipif(shutil.which("node") is None,
                           reason="node is not installed")
 
 
-def run(script, game):
+def run(script, game, source="game.js"):
     out = subprocess.run(["node", str(JS / script),
-                          str(config.GAMES_DIR / game / "game.js")],
+                          str(config.GAMES_DIR / game / source)],
                          capture_output=True, text=True, check=True)
     return json.loads(out.stdout)
 
@@ -27,10 +27,10 @@ def run(script, game):
 def test_every_folder_in_games_loads():
     games, problems = library.discover(config.GAMES_DIR)
     assert problems == []
-    assert {g.slug for g in games} >= {"balloon-rush", "snake", "colour-sort", "hot-potato"}
+    assert {g.slug for g in games} >= {"balloon-rush", "snake", "colour-sort", "hot-potato", "road-hop"}
 
 
-@pytest.mark.parametrize("slug", ["balloon-rush", "snake", "colour-sort", "hot-potato"])
+@pytest.mark.parametrize("slug", ["balloon-rush", "snake", "colour-sort", "hot-potato", "road-hop"])
 def test_each_game_has_the_art_the_grid_asks_for(slug):
     """A missing thumbnail is a blank plate on the menu, which looks like a
     broken game rather than a game without a picture."""
@@ -83,6 +83,29 @@ def test_hot_potato_only_allows_throws_that_make_sense():
         "aBangBringsAFreshFuse": True,
         "theLastOneStandingWins": True,
         "youCannotThrowItToSomebodyWhoIsOut": True,
+    }
+
+
+@node
+def test_road_hop_kills_you_for_the_right_reasons():
+    """Its rules live in world.js with no canvas anywhere near them, which
+    is what lets a car, a log and the eagle all be checked here."""
+    assert run("road-hop.js", "road-hop", "world.js") == {
+        "treesBlockAHop": True,
+        "theEdgeIsAWall": True,
+        "aQuietRoadIsSafe": True,
+        "aCarKills": True,
+        "waterWithoutALogDrowns": True,
+        "aLogCarriesYou": True,
+        "sweptOffTheEdgeDrowns": True,
+        "theScoreIsTheFurthestRow": True,
+        "theEagleTakesYouIfYouFallBehind": True,
+        "everyWaterRowHasSomethingToStandOn": True,
+        "noGrassRowIsAWall": True,
+        "aTrackStartsQuiet": True,
+        "theTrainWarnsBeforeItArrives": True,
+        "aSecondPressIsQueuedNotLost": True,
+        "theQueuedHopHappens": True,
     }
 
 

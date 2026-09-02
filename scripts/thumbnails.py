@@ -183,9 +183,77 @@ def hot_potato():
     save(image.convert("RGB"), "hot-potato")
 
 
+# --- Road Hop ----------------------------------------------------------
+# The same projection the game uses, so the card and the game agree about
+# what the world looks like: a cube is a top face and the two sides that
+# face the camera, each a shade darker.
+def road_hop():
+    image, _ = new((150, 205, 235), (196, 229, 247))
+    image = image.convert("RGBA")
+    pen = ImageDraw.Draw(image)
+    tile = 78 * S
+    view = dict(w=tile, d=tile * .58, s=tile * .21, h=tile * .66,
+                ox=W * S / 2 - tile * .21 * 2.4, oy=H * S * .92)
+
+    def proj(col, row, z):
+        return (view["ox"] + (col - 2.5) * view["w"] + row * view["s"],
+                view["oy"] - row * view["d"] - z * view["h"])
+
+    def shade(colour, amount):
+        return tuple(min(255, round(c * amount)) for c in colour)
+
+    def box(col, row, w, d, z0, z1, colour):
+        a, b = proj(col, row, z1), proj(col + w, row, z1)
+        c, e = proj(col + w, row + d, z1), proj(col, row + d, z1)
+        a0, b0 = proj(col, row, z0), proj(col + w, row, z0)
+        c0 = proj(col + w, row + d, z0)
+        pen.polygon([a, b, c, e], fill=shade(colour, 1.0))
+        pen.polygon([a, b, b0, a0], fill=shade(colour, .78))
+        pen.polygon([b, c, c0, b0], fill=shade(colour, .62))
+
+    # Far to near, so the nearer rows simply paint over the ones behind.
+    for row, kind in [(3, "grass"), (2, "road"), (1, "road"), (0, "grass"),
+                      (-1, "grass")]:
+        if kind == "grass":
+            box(-4, row, 14, 1, 0, .3, (126, 200, 80) if row % 2 else (118, 192, 71))
+        else:
+            box(-4, row, 14, 1, 0, .18, (76, 82, 92))
+            if row == 2:
+                for c in range(-4, 10, 2):
+                    pen.polygon([proj(c + .3, row + .96, .19),
+                                 proj(c + 1.3, row + .96, .19),
+                                 proj(c + 1.3, row + .99, .19),
+                                 proj(c + .3, row + .99, .19)],
+                                fill=(238, 232, 200))
+        if row == 3:
+            box(0.1, row + .32, .36, .36, .3, .8, (122, 82, 48))
+            box(-.15, row + .06, .88, .88, .8, 1.42, (53, 160, 87))
+            box(4.2, row + .32, .36, .36, .3, .8, (122, 82, 48))
+            box(3.95, row + .06, .88, .88, .8, 1.42, (47, 139, 76))
+        if row == 2:
+            box(2.6, row + .14, 1.9, .72, .18, .62, (226, 87, 76))
+            box(3.0, row + .2, 1.05, .6, .62, .92, (199, 76, 67))
+        if row == 1:
+            box(-.6, row + .14, 1.9, .72, .18, .62, (95, 179, 232))
+            box(-.2, row + .2, 1.05, .6, .62, .92, (83, 157, 204))
+        if row == 0:
+            # The chicken, on the near verge, mid-hop.
+            z = .34
+            box(2.11, .2, .78, .62, z + .04, z + .58, (247, 247, 244))
+            box(2.20, .66, .60, .34, z + .56, z + 1.04, (255, 255, 255))
+            box(2.35, .98, .30, .18, z + .72, z + .88, (244, 166, 60))
+            box(2.31, .72, .38, .22, z + 1.04, z + 1.2, (226, 87, 76))
+            for eye in (2.24, 2.63):
+                pen.polygon([proj(eye, .99, z + .96), proj(eye + .13, .99, z + .96),
+                             proj(eye + .13, .99, z + .84), proj(eye, .99, z + .84)],
+                            fill=(43, 43, 43))
+    save(image.convert("RGB"), "road-hop")
+
+
 if __name__ == "__main__":
     snake()
     colour_sort()
     balloon_rush()
     hot_potato()
+    road_hop()
     sys.exit(0)

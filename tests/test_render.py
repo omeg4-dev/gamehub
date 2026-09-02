@@ -21,6 +21,9 @@ PAGES = ["hub",
          # that gets checked rather than the one-player waiting screen.
          "games/hot-potato/index.html?players=4",
          "games/snake/index.html",
+         # Warped forty rows in, where the road, the river and the tracks
+         # are: the verge you start on draws almost nothing.
+         "games/road-hop/index.html?warp=40",
          "games/colour-sort/index.html"]
 
 pytestmark = pytest.mark.skipif(shutil.which("chromium") is None,
