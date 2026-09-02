@@ -7,18 +7,40 @@
 </head>
 <body>
 <div id="grid" class="grid"></div>
+
+<button class="pager left" data-act="page:-1" aria-label="previous page">
+  <svg viewBox="0 0 24 40"><path d="M18 3 4 20l14 17"/></svg>
+</button>
+<button class="pager right" data-act="page:1" aria-label="next page">
+  <svg viewBox="0 0 24 40"><path d="M6 3l14 17L6 37"/></svg>
+</button>
+
 <div id="problems" class="problems" hidden></div>
 
 <iframe id="stage" hidden allow="autoplay"></iframe>
 
 <div id="connect" class="connect">
-  <h1>Point your phone at the screen</h1>
-  <img id="qr" alt="">
-  <p id="address"></p>
-  <p class="muted">A mouse works too.</p>
+  <div class="panel">
+    <h1>Point your phone at the screen</h1>
+    <img id="qr" alt="">
+    <p id="address"></p>
+    <p class="muted">A mouse works too.</p>
+  </div>
 </div>
 
-<footer id="bar"><span id="clock"></span><span id="date"></span></footer>
+<footer id="bar">
+  <button class="knob wide" id="hubbtn" data-act="home">HUB</button>
+  <div class="plate">
+    <span id="date"></span>
+    <span class="tick"></span>
+    <span id="clock"></span>
+  </div>
+  <button class="knob" id="phonebtn" data-act="qr" aria-label="show the phone code">
+    <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="3"/><line x1="9" y1="18.5" x2="15" y2="18.5"/></svg>
+  </button>
+</footer>
+
+<div id="flash" class="flash"></div>
 <canvas id="cursor"></canvas>
 
 <script src="static/hub/input.js"></script>

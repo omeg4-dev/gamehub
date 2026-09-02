@@ -1,6 +1,8 @@
 from gamehub import config
 
 HUB_JS = config.WEB_DIR / "hub" / "hub.js"
+HUB_CSS = config.WEB_DIR / "hub" / "hub.css"
+HUB_HTML = config.WEB_DIR / "hub" / "index.html"
 
 
 def source():
@@ -41,3 +43,32 @@ def test_the_connect_screen_shrinks_once_the_phone_is_there():
 
 def test_broken_game_folders_are_shown_not_swallowed():
     assert "problems" in source()
+
+
+# --- the Wii Menu look -------------------------------------------------
+# The look is checked in a browser (scripts/shot.py photographs it); these
+# only hold the pieces that a later edit could quietly drop.
+
+def test_a_page_is_always_twelve_plates():
+    """Empty slots are the menu. A grid that reflows around however many
+    folders happen to be there is not a place you learn your way around."""
+    text = source()
+    assert "PER_PAGE = 12" in text and '"slot"' in text
+
+
+def test_pages_turn_when_there_are_more_than_twelve():
+    assert "pager" in source() and 'what === "page"' in source()
+    assert 'data-act="page:-1"' in HUB_HTML.read_text()
+
+
+def test_the_rounded_font_is_bundled_not_borrowed():
+    """A menu that falls back to the system sans stops looking like a
+    console, and a kiosk with no network cannot fetch one."""
+    assert (config.WEB_DIR / "fonts" / "nunito.ttf").exists()
+    assert "@font-face" in HUB_CSS.read_text()
+
+
+def test_the_shelf_carries_the_clock_and_the_two_knobs():
+    html = HUB_HTML.read_text()
+    assert 'id="clock"' in html and 'id="date"' in html
+    assert html.count('class="knob') == 2

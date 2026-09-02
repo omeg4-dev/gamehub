@@ -1,39 +1,222 @@
-:root { --ink:#20303c; --card:#ffffff; --edge:#cfe3ef; --accent:#3aa7e0; }
+/* The Wii System Menu, rebuilt from shapes rather than from assets: a pale
+   room of white plates, a silver shelf along the bottom, and one blue glow
+   that says where you are pointing. Nothing here is Nintendo's -- every
+   gradient, bevel and glyph below is drawn by this file. */
+
+@font-face {
+  font-family: "Hub Round";
+  /* Variable: one file covers the whole menu, from the thin date to the
+     heavy channel names. */
+  src: url("../fonts/nunito.ttf") format("truetype-variations");
+  font-weight: 200 1000;
+  font-display: block;
+}
+
+:root {
+  --ink: #33454f;
+  --dim: #7d93a1;
+  --glow: #35c6ff;
+  --plate-lo: #c3ced5;
+  --plate-hi: #fdfefe;
+  --edge: #b4c3cc;
+  --bar: 13vmin;
+}
+
 * { box-sizing: border-box; }
+
 html, body {
   margin: 0; height: 100%; overflow: hidden; cursor: none;
-  color: var(--ink); font: 16px/1.4 system-ui, sans-serif;
-  background: linear-gradient(#eaf6fd, #cfe6f4);
+  color: var(--ink);
+  font: 500 16px/1.35 "Hub Round", system-ui, sans-serif;
+  letter-spacing: .01em;
+  /* Not flat white: the menu sits in a lit room, brightest overhead. */
+  background:
+    radial-gradient(140% 90% at 50% -20%, #ffffff 0%, #f3f8fb 45%, #dde8ef 100%),
+    #dde8ef;
 }
-.grid { display: grid; grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 1fr; gap: 2vmin; padding: 4vmin; height: calc(100% - 9vmin); }
-.card { position: relative; background: var(--card); border: 2px solid var(--edge);
-  border-radius: 2vmin; display: grid; place-items: center; overflow: hidden;
-  box-shadow: 0 .4vmin 1.2vmin rgba(30,70,100,.12);
-  transition: transform .12s ease, box-shadow .12s ease; }
-.card.hot { transform: scale(1.06);
-  box-shadow: 0 1vmin 3vmin rgba(30,120,190,.35); border-color: var(--accent); }
+/* A vignette, so the plates float instead of lying on paper. */
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 80% at 50% 45%,
+              rgba(255,255,255,0) 55%, rgba(120,150,170,.20) 100%);
+}
+
+/* --- the channel grid ------------------------------------------------- */
+.grid {
+  position: fixed; inset: 0 0 var(--bar) 0;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2.4vmin; padding: 4.4vmin 5.5vmin 3.4vmin;
+}
+
+/* Every slot is a plate. A slot with no game in it is still a plate --
+   twelve of them, always, which is most of what the menu looks like. */
+.slot, .card {
+  position: relative; border-radius: 1.6vmin;
+  border: .35vmin solid #ffffff;
+  box-shadow:
+    0 0 0 .14vmin var(--edge),
+    0 .45vmin .9vmin rgba(70,100,120,.20);
+}
+.slot { background: linear-gradient(#d5dfe6, #c6d3dc);
+  box-shadow: 0 0 0 .14vmin var(--edge), inset 0 .6vmin 1.6vmin rgba(80,110,132,.30); }
+/* An empty slot is a hole, not a plate: it gets the recess but not the
+   gloss, which is what stops it reading as a game with no picture. */
+.slot::after { background: linear-gradient(rgba(255,255,255,.32),
+                                           rgba(255,255,255,.06) 45%,
+                                           rgba(255,255,255,0)); }
+
+.card {
+  background: linear-gradient(#ffffff, #eef4f8);
+  display: grid; place-items: center; overflow: hidden;
+  transition: transform .13s ease, box-shadow .13s ease, filter .13s ease;
+}
 .card img { width: 100%; height: 100%; object-fit: cover; }
-.card .name { position: absolute; bottom: .6vmin; font-weight: 600; }
-.card .star { position: absolute; top: .6vmin; right: .8vmin; font-size: 2vmin; }
-.card.opening { transform: scale(6); opacity: 0; transition: all .45s ease-in; }
-#stage { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
-.connect { position: fixed; inset: 0; display: grid; place-content: center;
-  justify-items: center; gap: 1rem; text-align: center;
-  background: rgba(234,246,253,.96); }
-.connect.badge { inset: auto 2vmin 2vmin auto; padding: 1vmin;
-  border-radius: 1.5vmin; background: rgba(255,255,255,.9); }
-.connect.badge h1, .connect.badge .muted { display: none; }
-.connect.badge img { width: 12vmin; }
-.muted { color: #6b8395; }
-.problems { position: fixed; left: 2vmin; bottom: 2vmin; max-width: 40vmin;
-  background: #fff2f0; border: 1px solid #ffb4a6; border-radius: 1vmin;
-  padding: 1vmin; font-size: 1.6vmin; }
-footer { position: fixed; inset: auto 0 0 0; height: 9vmin;
-  display: flex; align-items: center; justify-content: center; gap: 2vmin;
-  background: rgba(255,255,255,.75); font-size: 3vmin; }
+
+/* The gloss. A single highlight across the top half is the whole reason
+   these read as moulded plastic rather than as rectangles. */
+.card::after, .slot::after, .knob::after, .pager::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(rgba(255,255,255,.9), rgba(255,255,255,.28) 44%,
+                              rgba(255,255,255,.04) 50%,
+                              rgba(255,255,255,.16) 100%);
+}
+
+.card .name {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+  padding: .5vmin .8vmin; font-size: 1.9vmin; font-weight: 800;
+  text-align: center; color: #35505f;
+  background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.92) 40%);
+  text-shadow: 0 .1vmin 0 #fff;
+}
+.card .star {
+  position: absolute; top: .5vmin; right: .8vmin; z-index: 1;
+  font-size: 2.2vmin; color: #ffc93c;
+  text-shadow: 0 0 .4vmin rgba(180,120,0,.5);
+}
+
+/* Pointed at. The Wii's one loud colour, spent here and nowhere else. */
+.card.hot {
+  transform: scale(1.07); filter: brightness(1.04);
+  box-shadow:
+    0 0 0 .35vmin var(--glow),
+    0 0 3.2vmin rgba(53,198,255,.75),
+    0 1vmin 2.4vmin rgba(40,90,120,.28);
+}
+
+/* Opening: the plate swells past the edges of the screen and hands over. */
+.card.opening {
+  transform: scale(9); opacity: 0; z-index: 3;
+  transition: transform .45s cubic-bezier(.5,0,.9,.4), opacity .45s ease-in;
+}
+.flash {
+  position: fixed; inset: 0; pointer-events: none; opacity: 0;
+  background: #fff; transition: opacity .3s ease;
+}
+.flash.on { opacity: 1; }
+
+/* --- page arrows ------------------------------------------------------ */
+.pager {
+  position: fixed; top: calc(50% - var(--bar) / 2); transform: translateY(-50%);
+  width: 5.4vmin; height: 10vmin; padding: 0;
+  border-radius: 1.4vmin; border: .35vmin solid #fff;
+  background: linear-gradient(var(--plate-hi), var(--plate-lo));
+  box-shadow: 0 0 0 .12vmin var(--edge), 0 .4vmin .8vmin rgba(70,100,120,.22);
+  transition: transform .13s ease, box-shadow .13s ease;
+}
+.pager.left { left: 1.2vmin; }
+.pager.right { right: 1.2vmin; }
+.pager svg { width: 55%; height: 55%; fill: none; stroke: #5d7484;
+  stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.pager[disabled] { opacity: .3; }
+.pager.hot {
+  transform: translateY(-50%) scale(1.12);
+  box-shadow: 0 0 0 .3vmin var(--glow), 0 0 2.2vmin rgba(53,198,255,.7);
+}
+
+/* --- the shelf -------------------------------------------------------- */
+footer {
+  position: fixed; inset: auto 0 0 0; height: var(--bar); z-index: 2;
+  display: flex; align-items: center; gap: 1.6vmin;
+  padding: 1.4vmin 2.4vmin;
+  border-radius: 3vmin 3vmin 0 0;
+  border-top: .35vmin solid #ffffff;
+  background: linear-gradient(#fbfdfe 0%, #eaf0f4 38%, var(--plate-lo) 100%);
+  box-shadow: 0 -.4vmin 1.4vmin rgba(60,95,120,.22);
+}
+
+.knob {
+  position: relative; height: 100%; aspect-ratio: 1; padding: 0;
+  border-radius: 2vmin; border: .35vmin solid #fff;
+  background: linear-gradient(var(--plate-hi), #cfdae1);
+  box-shadow: 0 0 0 .12vmin var(--edge), 0 .35vmin .7vmin rgba(70,100,120,.25),
+              inset 0 -.5vmin .8vmin rgba(255,255,255,.9);
+  color: #465c69;
+  font: 900 3.2vmin/1 "Hub Round", system-ui, sans-serif; letter-spacing: .04em;
+  transition: transform .13s ease, box-shadow .13s ease;
+}
+.knob.wide { aspect-ratio: 1.55; }
+.knob svg { width: 46%; height: 46%; fill: none; stroke: #465c69;
+  stroke-width: 1.8; stroke-linecap: round; }
+.knob.hot {
+  transform: scale(1.07);
+  box-shadow: 0 0 0 .3vmin var(--glow), 0 0 2.4vmin rgba(53,198,255,.75);
+}
+
+.plate {
+  flex: 1; height: 100%; display: flex; align-items: center;
+  justify-content: space-between; gap: 2vmin; padding: 0 4vmin;
+  border-radius: 2vmin; border: .35vmin solid #fff;
+  background: linear-gradient(#f6fafc, #dae3e9);
+  box-shadow: 0 0 0 .12vmin var(--edge), inset 0 .5vmin 1.2vmin rgba(90,120,140,.20);
+  font-size: 4.2vmin; font-weight: 800; color: #43596a;
+  text-shadow: 0 .12vmin 0 rgba(255,255,255,.9);
+}
+.plate .tick { width: .35vmin; height: 45%; border-radius: .2vmin;
+  background: linear-gradient(rgba(140,165,180,0), rgba(140,165,180,.75),
+                              rgba(140,165,180,0)); }
+#date { font-weight: 700; color: #5a7284; font-size: 3.4vmin; }
+
+/* --- the game, and the things that interrupt it ----------------------- */
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 4; }
+
+.connect {
+  position: fixed; inset: 0; z-index: 5; display: grid; place-content: center;
+  background: rgba(233,241,246,.94);
+}
+.connect .panel {
+  display: grid; justify-items: center; gap: 1.4vmin;
+  padding: 3vmin 4vmin; border-radius: 2.4vmin;
+  border: .4vmin solid #fff; background: linear-gradient(#ffffff, #eaf1f5);
+  box-shadow: 0 0 0 .12vmin var(--edge), 0 1.2vmin 3vmin rgba(60,95,120,.28);
+  text-align: center;
+}
+.connect h1 { margin: 0; font-size: 3.4vmin; font-weight: 800; color: #3d5566; }
+.connect img { width: 34vmin; border-radius: 1.2vmin; background: #fff; padding: 1vmin; }
+.connect p { margin: 0; font-size: 2vmin; }
+
+/* Once the phone is in hand the panel becomes a badge on the shelf. */
+.connect.badge {
+  inset: auto 2vmin calc(var(--bar) + 1.6vmin) auto; background: none;
+}
+.connect.badge .panel { padding: 1vmin; gap: .6vmin; }
+.connect.badge h1, .connect.badge .muted, .connect.badge #address { display: none; }
+.connect.badge img { width: 11vmin; }
+
+.muted { color: var(--dim); }
+
+.problems {
+  position: fixed; left: 2vmin; bottom: calc(var(--bar) + 1.6vmin); z-index: 5;
+  max-width: 44vmin; padding: 1.2vmin 1.6vmin;
+  border-radius: 1.4vmin; border: .3vmin solid #fff;
+  background: linear-gradient(#fff4f2, #ffe4de);
+  box-shadow: 0 0 0 .12vmin #e8b4aa, 0 .5vmin 1.2vmin rgba(120,60,50,.2);
+  font-size: 1.7vmin; color: #7d3b30;
+}
+
 #cursor { position: fixed; inset: 0; width: 100%; height: 100%;
-  pointer-events: none; }
+  pointer-events: none; z-index: 9; }
 
 /* The grid and the stage are shown and hidden by the `hidden` property;
    their own display rules would otherwise outrank the browser default. */

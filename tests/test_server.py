@@ -64,6 +64,7 @@ async def test_a_frame_from_the_phone_reaches_the_hub_socket(client):
     """The one path that matters: sensors in one socket, a cursor out of
     the other."""
     async with client.ws_connect(f"/{TOKEN}/ws/hub") as hub:
+        await hub.receive_json(timeout=2)            # the greeting
         async with client.ws_connect(f"/{TOKEN}/ws/phone") as phone:
             await hub.receive_json(timeout=2)        # the phone arriving
             await phone.send_json({"type": "frame", "t": 0.0,
@@ -75,6 +76,7 @@ async def test_a_frame_from_the_phone_reaches_the_hub_socket(client):
 
 async def test_a_button_from_the_phone_reaches_the_hub_socket(client):
     async with client.ws_connect(f"/{TOKEN}/ws/hub") as hub:
+        await hub.receive_json(timeout=2)            # the greeting
         async with client.ws_connect(f"/{TOKEN}/ws/phone") as phone:
             await hub.receive_json(timeout=2)        # the phone arriving
             await phone.send_json({"type": "button", "name": "a", "down": True})
@@ -82,8 +84,19 @@ async def test_a_button_from_the_phone_reaches_the_hub_socket(client):
     assert message == {"type": "button", "name": "a", "down": True}
 
 
+async def test_a_new_hub_is_told_at_once_whether_a_phone_is_there(client):
+    """The page reloads more often than the phone connects; a hub that had
+    to wait for the next event would show the QR panel over a live menu."""
+    async with client.ws_connect(f"/{TOKEN}/ws/phone"):
+        async with client.ws_connect(f"/{TOKEN}/ws/hub") as hub:
+            assert (await hub.receive_json(timeout=2)) == \
+                {"type": "phone", "connected": True}
+
+
 async def test_the_hub_is_told_when_the_phone_arrives_and_leaves(client):
     async with client.ws_connect(f"/{TOKEN}/ws/hub") as hub:
+        assert (await hub.receive_json(timeout=2)) == \
+            {"type": "phone", "connected": False}
         async with client.ws_connect(f"/{TOKEN}/ws/phone"):
             assert (await hub.receive_json(timeout=2)) == \
                 {"type": "phone", "connected": True}

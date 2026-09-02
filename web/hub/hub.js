@@ -9,10 +9,18 @@ const grid = document.getElementById("grid");
 const stage = document.getElementById("stage");
 const connect = document.getElementById("connect");
 const problems = document.getElementById("problems");
+const flash = document.getElementById("flash");
+const pagers = [...document.querySelectorAll(".pager")];
+
+// Twelve plates to a page, filled up with empty ones. The empty slots are
+// not padding: a menu that reflows every time a folder is dropped in stops
+// being a place you know your way around.
+const PER_PAGE = 12;
 
 let games = [];
 let current = null;
 let hot = null;
+let page = 0;
 
 const load = async () => {
   const body = await (await fetch(`${base}/api/games`)).json();
@@ -21,11 +29,26 @@ const load = async () => {
   const rank = g => (stars.has(g.slug) ? 0 : 1) * 1000 +
                     (recent.indexOf(g.slug) < 0 ? 500 : recent.indexOf(g.slug));
   games = body.games.sort((a, b) => rank(a) - rank(b));
-  grid.innerHTML = "";
-  for (const game of games) {
+  page = Math.min(page, Math.max(0, Math.ceil(games.length / PER_PAGE) - 1));
+  render(stars);
+  showProblems(body.problems);
+};
+
+const render = stars => {
+  grid.replaceChildren();
+  const start = page * PER_PAGE;
+  for (let i = 0; i < PER_PAGE; i++) {
+    const game = games[start + i];
+    if (!game) {
+      const empty = document.createElement("div");
+      empty.className = "slot";
+      grid.append(empty);
+      continue;
+    }
     const card = document.createElement("div");
     card.className = "card";
     card.dataset.slug = game.slug;
+    card.dataset.act = `open:${game.slug}`;
     // Built as nodes, not as a string: a game.json is a drop-in file from
     // wherever the folder came from, and its name is not markup.
     const art = document.createElement("img");
@@ -39,36 +62,52 @@ const load = async () => {
     if (stars.has(game.slug)) {
       const star = document.createElement("span");
       star.className = "star";
-      star.textContent = "\u2605";
+      star.textContent = "★";
       card.append(star);
     }
     grid.append(card);
   }
-  if (body.problems.length) {
-    problems.hidden = false;
-    problems.replaceChildren();
-    const heading = document.createElement("b");
-    heading.textContent = "Games that would not load";
-    problems.append(heading);
-    for (const trouble of body.problems) {
-      const line = document.createElement("div");
-      line.textContent = `${trouble.slug}: ${trouble.reason}`;
-      problems.append(line);
-    }
+  const pages = Math.max(1, Math.ceil(games.length / PER_PAGE));
+  pagers[0].disabled = page === 0;
+  pagers[1].disabled = page >= pages - 1;
+  hot = null;
+};
+
+const turn = by => {
+  const pages = Math.max(1, Math.ceil(games.length / PER_PAGE));
+  const next = Math.min(pages - 1, Math.max(0, page + by));
+  if (next === page) return;
+  page = next;
+  load();
+  chime(660);
+};
+
+const showProblems = trouble => {
+  if (!trouble.length) return;
+  problems.hidden = false;
+  problems.replaceChildren();
+  const heading = document.createElement("b");
+  heading.textContent = "Games that would not load";
+  problems.append(heading);
+  for (const one of trouble) {
+    const line = document.createElement("div");
+    line.textContent = `${one.slug}: ${one.reason}`;
+    problems.append(line);
   }
 };
 
-// --- pointing at cards -------------------------------------------------
+// --- pointing ----------------------------------------------------------
 Input.on("pointer", () => {
   if (current) return;
   const [px, py] = Cursor.at();
-  const card = document.elementFromPoint(px, py)?.closest(".card");
-  if (card === hot) return;
+  const target = document.elementFromPoint(px, py)?.closest("[data-act]");
+  const pick = target && !target.disabled ? target : null;
+  if (pick === hot) return;
   hot?.classList.remove("hot");
-  hot = card;
+  hot = pick;
   if (hot) {
     hot.classList.add("hot");
-    chime();
+    chime(880);
   }
 });
 
@@ -77,11 +116,13 @@ const open = game => {
   current = game;
   const card = grid.querySelector(`[data-slug="${game.slug}"]`);
   card?.classList.add("opening");
+  flash.classList.add("on");
   Input.tell({type: "running", name: game.name, controls: game.controls});
   setTimeout(() => {
     stage.src = `${base}/games/${game.slug}/${game.entry}`;
     stage.hidden = false;
     grid.hidden = true;
+    flash.classList.remove("on");
   }, 450);
 };
 
@@ -97,6 +138,17 @@ const home = () => {
   load();
 };
 
+// Everything pointable says what it is in data-act, so the A button has one
+// job here rather than one per widget.
+const press = act => {
+  if (!act) return;
+  const [what, arg] = act.split(":");
+  if (what === "open") open(games.find(g => g.slug === arg));
+  if (what === "page") turn(Number(arg));
+  if (what === "home") home();
+  if (what === "qr") connect.classList.toggle("badge");
+};
+
 Input.on("button", event => {
   if (!event.down) {
     if (current) stage.contentWindow?.postMessage({gamehub: "button", ...event}, "*");
@@ -105,9 +157,11 @@ Input.on("button", event => {
   if (event.name === "home") return home();
   if (current) {
     stage.contentWindow?.postMessage({gamehub: "button", ...event}, "*");
-  } else if (event.name === "a" && hot) {
-    open(games.find(g => g.slug === hot.dataset.slug));
+    return;
   }
+  if (event.name === "a") press(hot?.dataset.act);
+  if (event.name === "left") turn(-1);
+  if (event.name === "right") turn(1);
 });
 
 Input.on("gesture", event =>
@@ -151,11 +205,14 @@ fetch(`${base}/api/qr`).then(r => r.json()).then(body => {
 }).catch(() => {});
 
 // --- furniture ---------------------------------------------------------
-const chime = () => {
+// The tick when the pointer crosses a plate. Short, soft, and the reason
+// the menu feels like hardware rather than a web page.
+const chime = (hz = 880) => {
   const ctx = chime.ctx ||= new AudioContext();
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.frequency.value = 880;
+  osc.type = "triangle";
+  osc.frequency.value = hz;
   gain.gain.setValueAtTime(0.05, ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
   osc.connect(gain).connect(ctx.destination);
@@ -163,12 +220,14 @@ const chime = () => {
   osc.stop(ctx.currentTime + 0.12);
 };
 
-setInterval(() => {
+const tick = () => {
   const now = new Date();
   document.getElementById("clock").textContent =
     now.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
   document.getElementById("date").textContent =
     now.toLocaleDateString([], {weekday: "short", day: "numeric", month: "short"});
-}, 1000);
+};
+setInterval(tick, 1000);
+tick();
 
 load();

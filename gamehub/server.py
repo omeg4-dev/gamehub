@@ -206,6 +206,10 @@ async def ws_hub(request):
     await socket.prepare(request)
     hub, phones = request.app[HUB], request.app[PHONES]
     hub.sockets.add(socket)
+    # A hub that has just loaded knows nothing. Without this it would show
+    # the fullscreen "point your phone at the screen" panel over a menu the
+    # phone is already driving -- every time the page reloads.
+    await socket.send_json({"type": "phone", "connected": bool(phones.sockets)})
     try:
         async for message in socket:
             if message.type is WSMsgType.TEXT:
