@@ -117,3 +117,38 @@ def test_every_colour_sort_board_can_actually_be_finished():
     assert len(boards) == 30
     assert [b for b in boards if not b["solvable"]] == []
     assert [b for b in boards if b["empty"]] == []
+
+
+@node
+def test_a_one_input_game_gets_a_phone_with_one_button():
+    """Games that ask only for A get a screen-sized A. A game that also
+    wants B or the d-pad must keep the normal layout, or the second control
+    becomes unreachable."""
+    out = subprocess.run(
+        ["node", str(JS / "controls.js"),
+         str(config.WEB_DIR / "shared" / "controls.js")],
+        capture_output=True, text=True, check=True)
+    got = json.loads(out.stdout)
+    assert got["pointerAndAIsSolo"] is True
+    assert got["aAloneIsSolo"] is True
+    assert got["aAndBIsNot"] is False
+    assert got["dpadIsNot"] is False
+    assert got["bAloneIsNot"] is False
+    assert got["nothingIsNot"] is False
+    assert got["theDefaultIsNot"] is False
+    assert got["gesturesCostNoScreen"] == "a"
+    assert got["orderIsStable"] == "dpad,a,b"
+
+
+@node
+def test_balloon_rush_is_a_one_input_game():
+    """The rule above only earns its keep if a game in the box hits it."""
+    out = subprocess.run(
+        ["node", "-e",
+         "const c = require(process.argv[1]);"
+         "const g = require(process.argv[2]);"
+         "process.stdout.write(String(c.isSolo(g.controls)))",
+         str(config.WEB_DIR / "shared" / "controls.js"),
+         str(config.GAMES_DIR / "balloon-rush" / "game.json")],
+        capture_output=True, text=True, check=True)
+    assert out.stdout == "true"

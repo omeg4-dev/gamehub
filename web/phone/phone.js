@@ -128,7 +128,15 @@ const setControls = list => {
   const wanted = new Set(list || ["pointer", "a", "b", "dpad"]);
   $("dpad").classList.toggle("dim", !wanted.has("dpad"));
   $("btn-b").classList.toggle("dim", !wanted.has("b"));
+  // One input means one button, and it is the whole page. Nothing else is
+  // pressable, so there is no wrong place to put your thumb.
+  document.body.classList.toggle("solo", isSolo(list));
 };
+
+// Preview: /phone?controls=a draws the layout a one-input game gets,
+// without needing a hub, a game and a running message to get there.
+const preview = new URLSearchParams(location.search).get("controls");
+if (preview) setControls(preview.split(","));
 
 // --- calibration -------------------------------------------------------
 //

@@ -16,6 +16,8 @@ from gamehub import config
 
 PAGES = ["hub",
          "phone",
+         # The one-input layout, where A is the whole screen.
+         "phone?controls=a",
          "games/balloon-rush/index.html",
          # Four seats, so the layout the party actually sees is the one
          # that gets checked rather than the one-player waiting screen.

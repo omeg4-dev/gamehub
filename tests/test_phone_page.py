@@ -56,3 +56,13 @@ def test_a_rumble_addressed_here_reaches_the_motor():
 
 def test_a_fifth_phone_is_told_the_room_is_full():
     assert '"full"' in source()
+
+
+def test_one_input_games_get_a_single_full_screen_button():
+    """A circle in the middle of a page is a thing you can miss. When A is
+    the only control, it stops being a shape and becomes the screen."""
+    assert "isSolo" in source()
+    assert 'controls.js' in HTML.read_text()
+    css = (config.WEB_DIR / "phone" / "phone.css").read_text()
+    assert "body.solo .a" in css
+    assert "width: 100%; height: 100%" in css

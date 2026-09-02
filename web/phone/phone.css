@@ -116,6 +116,24 @@ main {
 /* A control this game ignores is not dimmed, it is gone. */
 .dim { display: none; }
 
+/* --- one input, one button --------------------------------------------- */
+/*
+   Some games ask for a single press and nothing else. Drawing a circle for
+   that is drawing a way to miss it, so A stops being a shape on the page
+   and becomes the page: full bleed, corner to corner. The home row shrinks
+   out of the way at the same time -- it is the only other thing you could
+   hit, and it should take a deliberate reach.
+*/
+body.solo main { padding: .5rem .5rem 0; gap: 0; grid-template-rows: 1fr; }
+body.solo .a {
+  width: 100%; height: 100%; aspect-ratio: auto;
+  border-radius: 1.4rem; font-size: 4.5rem;
+}
+body.solo .a:active { transform: none; filter: brightness(.86); }
+body.solo footer { padding-top: .5rem; }
+body.solo footer .knob { min-height: 2.4rem; min-width: 2.4rem; font-size: .9rem; }
+body.solo footer .knob svg { width: 1.05rem; height: 1.05rem; }
+
 /* --- notices ----------------------------------------------------------- */
 .notice { margin: .8rem; padding: .9rem 1rem; border-radius: .9rem;
   color: #a33a2a; background: #ffeae5; font-weight: 700; }
