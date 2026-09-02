@@ -2,6 +2,9 @@
 
 *Written 2026-09-02. Plans only — nothing here is built yet.*
 
+> These two are numbers 1 and 2 of the twenty planned in
+> `2026-09-02-the-shelf-of-twenty.md`, kept here at full depth.
+
 ## What the shelf already covers
 
 | Game | Players | Controls | What it is |
